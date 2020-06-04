@@ -3,3 +3,4 @@ logs
 logs/*
 jsons
 jsons/*
+__pycache__/
