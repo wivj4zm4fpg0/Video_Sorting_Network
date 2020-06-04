@@ -16,12 +16,22 @@ class CNN_LSTM(nn.Module):
         self.resnet18 = nn.Sequential(*resnet18_modules_cut)
         resnet18_last_dim = 512
 
-        lstm_dim = 4096
+        pre_fc1_dim = 4096
+        pre_fc2_dim = 1000
+        self.pre_fc1 = nn.Linear(resnet18_last_dim, pre_fc1_dim)
+        nn.init.kaiming_normal_(self.pre_fc1.weight)
+        self.pre_fc2 = nn.Linear(pre_fc1_dim, pre_fc2_dim)
+        nn.init.kaiming_normal_(self.pre_fc2.weight)
+        # lstm_dim = 4096
+        lstm_dim = 512
         if bidirectional:
-            self.lstm = nn.LSTM(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
+            # self.lstm = nn.LSTM(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
+            #                     batch_first=True)
+            self.lstm = nn.LSTM(pre_fc2_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
                                 batch_first=True)
         else:
-            self.lstm = nn.LSTM(resnet18_last_dim, lstm_dim, bidirectional=False, num_layers=2, batch_first=True)
+            # self.lstm = nn.LSTM(resnet18_last_dim, lstm_dim, bidirectional=False, num_layers=2, batch_first=True)
+            self.lstm = nn.LSTM(pre_fc2_dim, lstm_dim, bidirectional=False, num_layers=2, batch_first=True)
 
         self.fc = nn.Linear(lstm_dim, class_num)
         nn.init.kaiming_normal_(self.fc.weight)
@@ -37,7 +47,7 @@ class CNN_LSTM(nn.Module):
         # x = self.resnet18(x)
         # x = x.view(sequence_length, batch_size, -1)
 
-        x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(batch_size)])
+        x = torch.stack([self.pre_fc2(self.pre_fc1(torch.flatten(self.resnet18(x[i]), 1))) for i in range(batch_size)])
 
         # fs = torch.zeros(batch_size, sequence_length, self.lstm_input_size).cuda()
         # for i in range(batch_size):
