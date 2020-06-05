@@ -3,7 +3,7 @@ import json
 import os
 from time import time
 
-from torch import nn, optim, save, load, mean
+from torch import nn, optim, save, load, max
 from torch.utils.data import DataLoader
 
 from CNN_LSTM_Model import CNN_LSTM
