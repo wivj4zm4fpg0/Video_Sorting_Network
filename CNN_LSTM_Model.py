@@ -46,6 +46,7 @@ class CNN_LSTM(nn.Module):
             cnn = self.resnet18(x[i])
             cnn = torch.flatten(cnn, 1)
             fs[i, :, :] = cnn
+        x = fs
 
         x = self.lstm(x)[0]
         x = self.fc(x)
