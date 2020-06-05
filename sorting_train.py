@@ -52,10 +52,11 @@ if args.model_load_path:
     start_epoch = checkpoint['epoch']
     Net.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    print('complete load model')
 
 # ログファイルの生成
 with open(log_train_path, mode='w') as f:
-    f.write('epoch,loss,accuracy,time,learning_rate\n')
+    f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
 
 # CUDA環境の有無で処理を変更
 if args.use_cuda:
@@ -71,7 +72,6 @@ def train(inputs, labels):
     # 演算開始. start calculate.
     outputs = Net(inputs)  # この記述方法で順伝搬が行われる
     optimizer.zero_grad()  # 勾配を初期化
-    # loss = criterion(reshape_output(outputs), labels)  # Loss値を計算
     loss = criterion(outputs, labels)  # Loss値を計算
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
@@ -82,14 +82,15 @@ def train(inputs, labels):
 def test(inputs, labels):
     with torch.no_grad():  # 勾配計算が行われないようにする
         outputs = Net(inputs)  # この記述方法で順伝搬が行われる
-        loss = criterion(reshape_output(outputs), labels)  # Loss値を計算
+        loss = criterion(outputs, labels)  # Loss値を計算
     return outputs, loss.item()
 
 
 # 推論を行う
 def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, iterate_len: int):
     epoch_loss = 0
-    epoch_accuracy = 0
+    epoch_full_fit_accuracy = 0
+    epoch_per_fit_accuracy = 0
     start_time = time()
 
     for i, data in enumerate(data_loader):
@@ -104,28 +105,59 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
 
         # 後処理
         predicted = torch.max(outputs, 2)[1]
-        # accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
-        accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
-        epoch_accuracy += accuracy
+        per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
+        full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
+        epoch_per_fit_accuracy += per_fit_accuracy
+        epoch_full_fit_accuracy += full_fit_accuracy
         epoch_loss += loss
-        print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, {accuracy = }')
+        print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, ' +
+              f'{full_fit_accuracy = }, {per_fit_accuracy=}')
 
     loss_avg = epoch_loss / iterate_len
-    accuracy_avg = epoch_accuracy / iterate_len
+    full_fit_accuracy_avg = epoch_full_fit_accuracy / iterate_len
+    per_fit_accuracy_avg = epoch_per_fit_accuracy / iterate_len
     epoch_time = time() - start_time
     learning_rate = optimizer.state_dict()['param_groups'][0]['lr']
-    print(f'{subset}: epoch = {epoch_num + 1}, {loss_avg = }, {accuracy_avg = }, {epoch_time = }, {learning_rate = }')
+    print(f'{subset}: epoch = {epoch_num + 1}, {loss_avg = }, {full_fit_accuracy_avg = }, ' +
+          f'{per_fit_accuracy_avg=}, {epoch_time = }, {learning_rate = }')
     with open(log_file, mode='a') as f:
-        f.write(f'{epoch_num + 1},{loss_avg},{accuracy_avg},{epoch_time},{learning_rate}\n')
+        f.write(f'{epoch_num + 1},{loss_avg},{full_fit_accuracy_avg},{per_fit_accuracy_avg},' +
+                f'{epoch_time},{learning_rate}\n')
 
+
+# # 推論を実行
+# for epoch in range(start_epoch, args.epoch_num):
+#     Net.train()
+#     estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
+#     if (epoch + 1) % args.model_save_interval == 0:
+#         torch.save({
+#             'epoch': (epoch + 1),
+#             'model_state_dict': Net.state_dict(),
+#             'optimizer_state_dict': optimizer.state_dict(),
+#         }, args.model_save_path)
 
 # 推論を実行
-for epoch in range(start_epoch, args.epoch_num):
-    Net.train()
-    estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
-    if (epoch + 1) % args.model_save_interval == 0:
-        torch.save({
-            'epoch': (epoch + 1),
+current_epoch = 0
+try:
+    for epoch in range(args.epoch_num):
+        current_epoch = epoch
+        Net.train()
+        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
+        Net.eval()
+        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
+except KeyboardInterrupt:  # Ctrl-Cで保存．
+    if args.model_save_path:
+        save({
+            'epoch': current_epoch,
             'model_state_dict': Net.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
         }, args.model_save_path)
+        print('complete save model')
+
+if args.model_save_path:
+    save({
+        'epoch': args.epoch_num,
+        'model_state_dict': Net.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+    }, args.model_save_path)
+    print('complete save model')

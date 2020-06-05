@@ -59,6 +59,7 @@ if args.model_load_path:
     checkpoint = load(args.model_load_path)
     Net.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    print('complete load model')
 
 # ログファイルの生成
 with open(log_train_path, mode='w') as f:
@@ -76,7 +77,7 @@ else:
 
 # 双方向の有無で出力の取り方を変える
 if args.use_bidirectional:
-    reshape_output = lambda x: mean(x, 1) # シーケンスの平均を取る
+    reshape_output = lambda x: mean(x, 1)  # シーケンスの平均を取る
 else:
     reshape_output = lambda x: x[:, -1, :]  # シーケンスの最後を取る
 
@@ -131,11 +132,22 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
 
 
 # 推論を実行
-for epoch in range(args.epoch_num):
-    Net.train()
-    estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
-    Net.eval()
-    estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
+current_epoch = 0
+try:
+    for epoch in range(args.epoch_num):
+        current_epoch = epoch
+        Net.train()
+        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
+        Net.eval()
+        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
+except KeyboardInterrupt:  # Ctrl-Cで保存．
+    if args.model_save_path:
+        save({
+            'epoch': current_epoch,
+            'model_state_dict': Net.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+        }, args.model_save_path)
+        print('complete save model')
 
 if args.model_save_path:
     save({
@@ -143,3 +155,4 @@ if args.model_save_path:
         'model_state_dict': Net.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
     }, args.model_save_path)
+    print('complete save model')

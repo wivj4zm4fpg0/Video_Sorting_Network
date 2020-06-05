@@ -30,21 +30,22 @@ class CNN_LSTM(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
 
         batch_size = x.shape[0]
-        sequence_length = x.shape[1]
+        # sequence_length = x.shape[1]
+        #
+        # # (バッチサイズ x RNNへの入力数, チャンネル数, 解像度, 解像度)の4次元配列に変換する
+        # x = x.view(batch_size * sequence_length, x.shape[2], x.shape[3], x.shape[4])
+        # x = self.resnet18(x)
+        # x = x.view(batch_size, sequence_length, -1)
 
-        # (バッチサイズ x RNNへの入力数, チャンネル数, 解像度, 解像度)の4次元配列に変換する
-        x = x.view(batch_size * sequence_length, x.shape[2], x.shape[3], x.shape[4])
-        x = self.resnet18(x)
-        x = x.view(batch_size, sequence_length, -1)
-
+        # 非推奨．CNNが学習されないっぽい．no recommended. It seems that CNN is not learned.
         # x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(batch_size)])
 
-        # fs = torch.zeros(batch_size, sequence_length, self.lstm_input_size).cuda()
-        # for i in range(batch_size):
-        #     cnn = self.resnet18(x[i])
-        #     cnn = torch.flatten(cnn, 1)
-        #     cnn = self.fc_pre(cnn)
-        #     fs[i, :, :] = cnn
+        fs = torch.zeros(batch_size, sequence_length, self.lstm_input_size).cuda()
+        for i in range(batch_size):
+            cnn = self.resnet18(x[i])
+            cnn = torch.flatten(cnn, 1)
+            cnn = self.fc_pre(cnn)
+            fs[i, :, :] = cnn
 
         x = self.lstm(x)[0]
         x = self.fc(x)
