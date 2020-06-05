@@ -109,7 +109,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
         # 後処理
         # predicted = max(reshape_output(outputs), 1)[1]
         predicted = max(outputs, 2)[1]
-        accuracy = (predicted == labels).sum().item() / batch_size
+        accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
         epoch_accuracy += accuracy
         epoch_loss += loss
         print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, {accuracy = }')
