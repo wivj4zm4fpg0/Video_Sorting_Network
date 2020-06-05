@@ -4,3 +4,4 @@ logs/*
 jsons
 jsons/*
 __pycache__/
+*.pth

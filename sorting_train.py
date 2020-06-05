@@ -65,12 +65,6 @@ if args.use_cuda:
 else:
     device = 'cpu'
 
-# 双方向の有無で出力の取り方を変える
-if args.use_bidirectional:
-    reshape_output = lambda x: mean(x, 1)  # シーケンスの平均を取る
-else:
-    reshape_output = lambda x: x[:, -1, :]  # シーケンスの最後を取る
-
 
 # 訓練を行う
 def train(inputs, labels):
@@ -109,7 +103,6 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
         outputs, loss = calcu(inputs, labels)
 
         # 後処理
-        # predicted = max(reshape_output(outputs), 1)[1]
         predicted = torch.max(outputs, 2)[1]
         # accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
         accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
