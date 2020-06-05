@@ -107,7 +107,8 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
         outputs, loss = calcu(inputs, labels)
 
         # 後処理
-        predicted = max(reshape_output(outputs), 1)[1]
+        # predicted = max(reshape_output(outputs), 1)[1]
+        predicted = max(outputs, 2)[1]
         accuracy = (predicted == labels).sum().item() / batch_size
         epoch_accuracy += accuracy
         epoch_loss += loss
