@@ -93,7 +93,7 @@ def test(inputs, labels):
 
 
 # 推論を行う
-answer = torch.full_like(torch.zeros(batch_size), fill_value=frame_num)  # accuracyの計算に使う
+answer = torch.full_like(torch.zeros(batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
 
 def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, iterate_len: int):
