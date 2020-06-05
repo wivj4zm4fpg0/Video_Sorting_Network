@@ -22,24 +22,41 @@ parser.add_argument('--use_bidirectional', action='store_true')
 parser.add_argument('--learning_rate', type=float, default=0.01, required=False)
 parser.add_argument('--model_save_path', type=str, required=False)
 parser.add_argument('--model_load_path', type=str, required=False)
-parser.add_argument('--depth', type=int, default=2, required=False)
+# parser.add_argument('--depth', type=int, default=2, required=False)
 parser.add_argument('--model_save_interval', type=int, default=50, required=False)
+parser.add_argument('--train_label_path', type=str, required=True)
+parser.add_argument('--test_label_path', type=str, required=True)
+parser.add_argument('--class_path', type=str, required=True)
 
 args = parser.parse_args()
 batch_size = args.batch_size
 frame_num = args.frame_num
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
+log_test_path = os.path.join(args.output_dir, 'log_test.csv')
 os.makedirs(args.output_dir, exist_ok=True)
 if not args.model_save_path:
     args.model_save_path = os.path.join(args.output_dir, 'model.pth')
 json.dump(vars(args), open(os.path.join(args.output_dir, 'args.jsons'), mode='w'),
           ensure_ascii=False, indent=4, sort_keys=True, separators=(',', ': '))
 
+# # データセットを読み込む
+# train_loader = DataLoader(
+#     VideoSortTrainDataSet(frame_num=frame_num, path_load=recursive_video_path_load(args.dataset_path, args.depth)),
+#     batch_size=batch_size, shuffle=True)
+# train_iterate_len = len(train_loader)
+
 # データセットを読み込む
 train_loader = DataLoader(
-    VideoSortTrainDataSet(frame_num=frame_num, path_load=recursive_video_path_load(args.dataset_path, args.depth)),
+    VideoTrainDataSet(frame_num=frame_num, path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path)),
     batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(
+    VideoTestDataSet(
+        frame_num=frame_num,
+        path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path)),
+    batch_size=batch_size,
+    shuffle=False)
 train_iterate_len = len(train_loader)
+test_iterate_len = len(test_loader)
 
 # 初期設定
 # resnet18を取得
@@ -56,6 +73,8 @@ if args.model_load_path:
 
 # ログファイルの生成
 with open(log_train_path, mode='w') as f:
+    f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
+with open(log_test_path, mode='w') as f:
     f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
 
 # CUDA環境の有無で処理を変更
