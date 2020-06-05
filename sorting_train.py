@@ -93,9 +93,6 @@ def test(inputs, labels):
 
 
 # 推論を行う
-answer = torch.full_like(torch.zeros(batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
-
-
 def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, iterate_len: int):
     epoch_loss = 0
     epoch_accuracy = 0
@@ -105,6 +102,8 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
         # 前処理
         inputs, labels = data
         labels = labels.to(device, non_blocking=True)
+        temp_batch_size = len(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
+        answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
         # 演算開始. start calculate.
         outputs, loss = calcu(inputs, labels)
@@ -113,7 +112,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
         # predicted = max(reshape_output(outputs), 1)[1]
         predicted = torch.max(outputs, 2)[1]
         # accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
-        accuracy = ((predicted == labels).sum(1) == answer).sum().item() / batch_size
+        accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
         epoch_accuracy += accuracy
         epoch_loss += loss
         print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, {accuracy = }')
