@@ -3,7 +3,7 @@ import json
 import os
 from time import time
 
-from torch import nn, optim, save, load, max
+import torch
 from torch.utils.data import DataLoader
 
 from CNN_LSTM_Model import CNN_LSTM
@@ -44,11 +44,11 @@ train_iterate_len = len(train_loader)
 # 初期設定
 # resnet18を取得
 Net = CNN_LSTM(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
-criterion = nn.CrossEntropyLoss()  # Loss関数を定義
-optimizer = optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
+criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
+optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 start_epoch = 0
 if args.model_load_path:
-    checkpoint = load(args.model_load_path)
+    checkpoint = torch.load(args.model_load_path)
     start_epoch = checkpoint['epoch']
     Net.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -60,7 +60,7 @@ with open(log_train_path, mode='w') as f:
 # CUDA環境の有無で処理を変更
 if args.use_cuda:
     criterion = criterion.cuda()
-    Net = nn.DataParallel(Net.cuda())
+    Net = torch.nn.DataParallel(Net.cuda())
     device = 'cuda'
 else:
     device = 'cpu'
@@ -86,13 +86,16 @@ def train(inputs, labels):
 
 # テストを行う
 def test(inputs, labels):
-    with no_grad():  # 勾配計算が行われないようにする
+    with torch.no_grad():  # 勾配計算が行われないようにする
         outputs = Net(inputs)  # この記述方法で順伝搬が行われる
         loss = criterion(reshape_output(outputs), labels)  # Loss値を計算
     return outputs, loss.item()
 
 
 # 推論を行う
+answer = torch.full_like(torch.zeros(batch_size), fill_value=frame_num)  # accuracyの計算に使う
+
+
 def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, iterate_len: int):
     epoch_loss = 0
     epoch_accuracy = 0
@@ -108,8 +111,9 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
 
         # 後処理
         # predicted = max(reshape_output(outputs), 1)[1]
-        predicted = max(outputs, 2)[1]
-        accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
+        predicted = torch.max(outputs, 2)[1]
+        # accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
+        accuracy = ((predicted == labels).sum(1) == answer).sum().item() / batch_size
         epoch_accuracy += accuracy
         epoch_loss += loss
         print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, {accuracy = }')
@@ -128,7 +132,7 @@ for epoch in range(start_epoch, args.epoch_num):
     Net.train()
     estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
     if (epoch + 1) % args.model_save_interval == 0:
-        save({
+        torch.save({
             'epoch': (epoch + 1),
             'model_state_dict': Net.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
