@@ -43,7 +43,7 @@ train_iterate_len = len(train_loader)
 
 # 初期設定
 # resnet18を取得
-Net = CNN_LSTM(args.class_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
+Net = CNN_LSTM(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
 criterion = nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 start_epoch = 0
