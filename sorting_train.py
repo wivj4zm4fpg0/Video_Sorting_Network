@@ -6,7 +6,6 @@ from torch import nn, optim, save, load, mean
 from torch.utils.data import DataLoader
 
 from CNN_LSTM_Model import CNN_LSTM
-from LSTM_Action_Recognition import train, estimate
 from video_sort_train_loader import VideoSortTrainDataSet, recursive_video_path_load
 
 # コマンドライン引数を処理
@@ -70,6 +69,57 @@ if args.use_bidirectional:
     reshape_output = lambda x: mean(x, 1)  # シーケンスの平均を取る
 else:
     reshape_output = lambda x: x[:, -1, :]  # シーケンスの最後を取る
+
+
+# 訓練を行う
+def train(inputs, labels):
+    # 演算開始. start calculate.
+    outputs = Net(inputs)  # この記述方法で順伝搬が行われる
+    optimizer.zero_grad()  # 勾配を初期化
+    # loss = criterion(reshape_output(outputs), labels)  # Loss値を計算
+    loss = criterion(outputs, labels)  # Loss値を計算
+    loss.backward()  # 逆伝搬で勾配を求める
+    optimizer.step()  # 重みを更新
+    return outputs, loss.item()
+
+
+# テストを行う
+def test(inputs, labels):
+    with no_grad():  # 勾配計算が行われないようにする
+        outputs = Net(inputs)  # この記述方法で順伝搬が行われる
+        loss = criterion(reshape_output(outputs), labels)  # Loss値を計算
+    return outputs, loss.item()
+
+
+# 推論を行う
+def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, iterate_len: int):
+    epoch_loss = 0
+    epoch_accuracy = 0
+    start_time = time()
+
+    for i, data in enumerate(data_loader):
+        # 前処理
+        inputs, labels = data
+        labels = labels.to(device, non_blocking=True)
+
+        # 演算開始. start calculate.
+        outputs, loss = calcu(inputs, labels)
+
+        # 後処理
+        predicted = max(reshape_output(outputs), 1)[1]
+        accuracy = (predicted == labels).sum().item() / batch_size
+        epoch_accuracy += accuracy
+        epoch_loss += loss
+        print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, {accuracy = }')
+
+    loss_avg = epoch_loss / iterate_len
+    accuracy_avg = epoch_accuracy / iterate_len
+    epoch_time = time() - start_time
+    learning_rate = optimizer.state_dict()['param_groups'][0]['lr']
+    print(f'{subset}: epoch = {epoch_num + 1}, {loss_avg = }, {accuracy_avg = }, {epoch_time = }, {learning_rate = }')
+    with open(log_file, mode='a') as f:
+        f.write(f'{epoch_num + 1},{loss_avg},{accuracy_avg},{epoch_time},{learning_rate}\n')
+
 
 # 推論を実行
 for epoch in range(start_epoch, args.epoch_num):
