@@ -30,7 +30,7 @@ class CNN_LSTM(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
 
         batch_size = x.shape[0]
-        # sequence_length = x.shape[1]
+        sequence_length = x.shape[1]
         #
         # # (バッチサイズ x RNNへの入力数, チャンネル数, 解像度, 解像度)の4次元配列に変換する
         # x = x.view(batch_size * sequence_length, x.shape[2], x.shape[3], x.shape[4])
