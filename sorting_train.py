@@ -126,7 +126,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
 # 推論を実行
 for epoch in range(start_epoch, args.epoch_num):
     Net.train()
-    estimate(train_loader, train, 'train', start_epoch, log_train_path, train_iterate_len)
+    estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
     if (epoch + 1) % args.model_save_interval == 0:
         save({
             'epoch': (epoch + 1),
