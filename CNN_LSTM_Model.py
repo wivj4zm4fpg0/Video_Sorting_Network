@@ -40,7 +40,8 @@ class CNN_LSTM(nn.Module):
         # 非推奨．CNNが学習されないっぽい．no recommended. It seems that CNN is not learned.
         # x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(batch_size)])
 
-        fs = torch.zeros(batch_size, sequence_length, self.lstm_input_size).cuda()
+        resnet18_last_dim = 512
+        fs = torch.zeros(batch_size, sequence_length, resnet18_last_dim).cuda()
         for i in range(batch_size):
             cnn = self.resnet18(x[i])
             cnn = torch.flatten(cnn, 1)
