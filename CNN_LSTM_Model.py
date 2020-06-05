@@ -45,7 +45,6 @@ class CNN_LSTM(nn.Module):
         for i in range(batch_size):
             cnn = self.resnet18(x[i])
             cnn = torch.flatten(cnn, 1)
-            cnn = self.fc_pre(cnn)
             fs[i, :, :] = cnn
 
         x = self.lstm(x)[0]
