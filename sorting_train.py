@@ -7,7 +7,9 @@ import torch
 from torch.utils.data import DataLoader
 
 from CNN_LSTM_Model import CNN_LSTM
-from video_sort_train_loader import VideoSortTrainDataSet, recursive_video_path_load
+from video_sort_train_loader import VideoSortTrainDataSet
+from video_test_loader import ucf101_test_path_load
+from video_train_loader import ucf101_train_path_load
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()
@@ -47,14 +49,15 @@ json.dump(vars(args), open(os.path.join(args.output_dir, 'args.jsons'), mode='w'
 
 # データセットを読み込む
 train_loader = DataLoader(
-    VideoTrainDataSet(frame_num=frame_num, path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path)),
+    VideoSortTrainDataSet(
+        frame_num=frame_num,
+        path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path)),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
-    VideoTestDataSet(
+    VideoSortTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path)),
-    batch_size=batch_size,
-    shuffle=False)
+    batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)
 test_iterate_len = len(test_loader)
 
