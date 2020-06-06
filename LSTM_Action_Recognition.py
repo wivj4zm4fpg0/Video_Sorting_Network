@@ -157,6 +157,7 @@ except KeyboardInterrupt:  # Ctrl-Cで保存．
             'optimizer_state_dict': optimizer.state_dict(),
         }, args.model_save_path)
         print('complete save model')
+        exit(0)
 
 if args.model_save_path:
     torch.save({

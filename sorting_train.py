@@ -99,8 +99,15 @@ if args.model_load_path:
     print('complete load model')
 
 
-def inner_product_loss():
-    pass
+def inner_product_loss(outputs: torch.Tensor) -> torch.Tensor:  # (seq_len, batch_size, class_num)
+    seq_len = outputs.size()[0]
+    out = torch.zeros(seq_len * seq_len)
+    outputs_ = outputs.permute(1, 0, 2)
+    for i in range(outputs_.size()[0]):  # (batch_size, seq_len, class_num)
+        for j in range(seq_len):
+            for k in range(seq_len):
+                out[j + k] = torch.dot(outputs_[i][j], outputs_[i][j + k])
+    return out / (seq_len * seq_len)
 
 
 # VideoDataTrainDataSetの出力はフレームのみ．ラベルの取得はtrain_loader.dataset.shuffle_listを呼び出すこと
@@ -118,7 +125,7 @@ def train(inputs):
     labels = labels.to(device, non_blocking=True)
     outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
-    loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
+    loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
     return outputs, loss.item(), labels
@@ -132,12 +139,13 @@ def test(inputs):
         labels = inputs[1]
         labels = labels.to(device, non_blocking=True)
         outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる
-        loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
+        loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
     return outputs, loss.item(), labels
 
 
 # 推論を行う
-def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, iterate_len: int, get_batch_size_func):
+def estimate(data_loader: DataLoader, calc: function, subset: str, epoch_num: int, log_file: str, iterate_len: int,
+             get_batch_size_func: function):
     epoch_loss = 0
     epoch_full_fit_accuracy = 0
     epoch_per_fit_accuracy = 0
@@ -150,7 +158,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
         # 演算開始. start calculate.
-        outputs, loss, labels = calcu(inputs)
+        outputs, loss, labels = calc(inputs)
 
         # 後処理
         predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]
