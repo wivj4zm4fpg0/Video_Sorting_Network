@@ -143,7 +143,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
 
 # 推論を実行
 try:
-    for epoch in range(args.epoch_num):
+    for epoch in range(current_epoch, args.epoch_num):
         current_epoch = epoch
         Net.train()
         estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
