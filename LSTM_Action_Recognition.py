@@ -3,7 +3,8 @@ import json
 import os
 from time import time
 
-from torch import max, nn, no_grad, optim, save, load, mean
+import torch
+from torch import nn
 from torch.utils.data import DataLoader
 
 from CNN_LSTM_Model import CNN_LSTM
@@ -56,15 +57,15 @@ test_iterate_len = len(test_loader)
 # resnet18を取得
 Net = CNN_LSTM(args.class_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
 criterion = nn.CrossEntropyLoss()  # Loss関数を定義
-optimizer = optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
+optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
 if args.model_load_path:
-    checkpoint = load(args.model_load_path)
+    checkpoint = torch.load(args.model_load_path)
     Net.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    print('complete load model')
     if args.load_epoch_num:
         current_epoch = checkpoint['epoch']
+    print('complete load model')
 
 # ログファイルの生成
 if not args.no_reset_log_file:
@@ -84,7 +85,7 @@ else:
 # 双方向の有無で出力の取り方を変える
 if args.use_bidirectional:
     # reshape_output = lambda x: mean(x, 1)  # シーケンスの平均を取る (batch_size, seq_len, class_num)
-    reshape_output = lambda x: mean(x, 0)  # シーケンスの平均を取る (seq_len, batch_size, class_num)
+    reshape_output = lambda x: torch.mean(x, 0)  # シーケンスの平均を取る (seq_len, batch_size, class_num)
 else:
     # reshape_output = lambda x: x[:, -1, :]  # シーケンスの最後を取る (batch_size, seq_len, class_num)
     reshape_output = lambda x: x[-1, :, :]  # シーケンスの最後を取る (seq_len, batch_size, class_num)
@@ -103,7 +104,7 @@ def train(inputs, labels):
 
 # テストを行う
 def test(inputs, labels):
-    with no_grad():  # 勾配計算が行われないようにする
+    with torch.no_grad():  # 勾配計算が行われないようにする
         outputs = Net(inputs)  # この記述方法で順伝搬が行われる
         loss = criterion(reshape_output(outputs), labels)  # Loss値を計算
     return outputs, loss.item()
@@ -124,7 +125,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
         outputs, loss = calcu(inputs, labels)
 
         # 後処理
-        predicted = max(reshape_output(outputs), 1)[1]
+        predicted = torch.max(reshape_output(outputs), 1)[1]
         accuracy = (predicted == labels).sum().item() / batch_size
         epoch_accuracy += accuracy
         epoch_loss += loss
@@ -149,7 +150,7 @@ try:
         estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
 except KeyboardInterrupt:  # Ctrl-Cで保存．
     if args.model_save_path:
-        save({
+        torch.save({
             'epoch': current_epoch,
             'model_state_dict': Net.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
@@ -157,7 +158,7 @@ except KeyboardInterrupt:  # Ctrl-Cで保存．
         print('complete save model')
 
 if args.model_save_path:
-    save({
+    torch.save({
         'epoch': args.epoch_num,
         'model_state_dict': Net.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
