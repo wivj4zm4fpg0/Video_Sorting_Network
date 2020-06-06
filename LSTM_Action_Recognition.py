@@ -29,7 +29,7 @@ parser.add_argument('--learning_rate', type=float, default=0.01, required=False)
 parser.add_argument('--model_save_path', type=str, required=False)
 parser.add_argument('--model_load_path', type=str, required=False)
 parser.add_argument('--no_reset_log_file', action='store_true')
-parser.add_argumetn('--load_epoch_num', action='store_true')
+parser.add_argument('--load_epoch_num', action='store_true')
 
 args = parser.parse_args()
 batch_size = args.batch_size
