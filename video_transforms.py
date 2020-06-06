@@ -22,7 +22,7 @@ class VideoRandomCrop(transforms.RandomCrop):
         return F.crop(img, i, j, h, w)
 
     def set_param(self, img: Image):
-        self.ijhw: Tuple = transforms.RandomCrop.get_params(img, self.size)
+        self.ijhw: tuple = transforms.RandomCrop.get_params(img, self.size)
 
 
 class VideoRandomRotation(transforms.RandomRotation):

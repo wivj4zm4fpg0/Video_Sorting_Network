@@ -169,7 +169,7 @@ try:
         estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
 except KeyboardInterrupt:  # Ctrl-Cで保存．
     if args.model_save_path:
-        save({
+        torch.save({
             'epoch': current_epoch,
             'model_state_dict': Net.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
@@ -177,7 +177,7 @@ except KeyboardInterrupt:  # Ctrl-Cで保存．
         print('complete save model')
 
 if args.model_save_path:
-    save({
+    torch.save({
         'epoch': args.epoch_num,
         'model_state_dict': Net.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
