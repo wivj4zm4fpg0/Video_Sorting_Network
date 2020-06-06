@@ -38,7 +38,7 @@ log_test_path = os.path.join(args.output_dir, 'log_test.csv')
 os.makedirs(args.output_dir, exist_ok=True)
 if not args.model_save_path:
     args.model_save_path = os.path.join(args.output_dir, 'model.pth')
-json.dump(vars(args), open(os.path.join(args.output_dir, 'args.jsons'), mode='w'),
+json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w'),
           ensure_ascii=False, indent=4, sort_keys=True, separators=(',', ': '))
 
 # # データセットを読み込む
