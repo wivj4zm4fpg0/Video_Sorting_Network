@@ -77,9 +77,11 @@ else:
 
 # 双方向の有無で出力の取り方を変える
 if args.use_bidirectional:
-    reshape_output = lambda x: mean(x, 1)  # シーケンスの平均を取る
+    # reshape_output = lambda x: mean(x, 1)  # シーケンスの平均を取る (batch_size, seq_len, class_num)
+    reshape_output = lambda x: mean(x, 0)  # シーケンスの平均を取る (seq_len, batch_size, class_num)
 else:
-    reshape_output = lambda x: x[:, -1, :]  # シーケンスの最後を取る
+    # reshape_output = lambda x: x[:, -1, :]  # シーケンスの最後を取る (batch_size, seq_len, class_num)
+    reshape_output = lambda x: x[-1, :, :]  # シーケンスの最後を取る (seq_len, batch_size, class_num)
 
 
 # 訓練を行う
