@@ -101,15 +101,16 @@ if args.model_load_path:
 
 def inner_product_loss(outputs: torch.Tensor) -> torch.Tensor:  # (seq_len, batch_size, class_num)
     seq_len = outputs.size()[0]
-    out = torch.zeros(seq_len * (seq_len - 1) // 2)
     outputs_ = outputs.permute(1, 0, 2)
-    index = 0
+    out = torch.zeros(outputs_.size()[0], seq_len * (seq_len - 1) // 2)
+    out = out.to(device, non_blocking=True)
     for i in range(outputs_.size()[0]):  # (batch_size, seq_len, class_num)
+        index = 0
         for j in range(seq_len):
             for k in range(j, seq_len):
-                if i == k:
+                if j == k:
                     continue
-                out[index] = torch.dot(outputs_[i][j], outputs_[i][k])
+                out[i][index] = torch.dot(outputs_[i][j], outputs_[i][k])
                 index += 1
     return torch.mean(out)
 
