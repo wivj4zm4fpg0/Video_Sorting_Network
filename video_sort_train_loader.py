@@ -1,14 +1,15 @@
 import os
-from random import randint, shuffle
+from random import randint, sample
 
 import cv2
 import numpy as np
 import torch
 from PIL import Image
+from natsort import natsorted
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.utils import make_grid
-from natsort import natsorted
+
 from video_train_loader import VideoTrainDataSet
 
 
@@ -29,8 +30,11 @@ def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):
 class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
 
     def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_load: list = None,
-                 random_crop_size: int = 224):
+                 random_crop_size: int = 224, interval_frame: int = 4):
         super().__init__(pre_processing, frame_num, path_load, random_crop_size)
+        self.crop_video_len = (frame_num - 1) * interval_frame + frame_num
+        self.interval_len = interval_frame
+        self.shuffle_list = list(range(frame_num))
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
@@ -40,11 +44,10 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
             [os.path.join(self.data_list[index][0], frame) for frame in natsorted(os.listdir(self.data_list[index][0]))]
         frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
         video_len = len(frame_list)
+        assert self.crop_video_len < video_len
         # {frame_index + 0, frame_index + 1, ..., frame_index + self.frame_num - 1}番号のフレームを取得するのに使う
-        frame_index = randint(0, video_len - self.frame_num - 1)
-        frame_indices = [[frame_index + i, i] for i in range(self.frame_num)]
-        shuffle(frame_indices)
-        frame_indices = torch.tensor(frame_indices)
+        start_index = randint(0, video_len - self.crop_video_len)
+        frame_indices = list[range(video_len)][start_index:start_index + self.crop_video_len:self.interval_len + 1]
 
         # transformsの設定
         # self.pre_processing.transforms[0].set_degree()  # RandomRotationの回転角度を設定
@@ -55,12 +58,19 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
 
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
         # リスト内包表記で検索
-        video_tensor = [pre_processing(frame_list[i]) for i in frame_indices[:, 0]]
+        video_tensor = [pre_processing(frame_list[i]) for i in frame_indices]
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
-        return video_tensor, frame_indices[:, 1]  # 入力画像とそのラベルをタプルとして返す
+        return video_tensor  # 入力画像とそのラベルをタプルとして返す
 
     def __len__(self) -> int:  # データセットの数を返すようにする
         return len(self.data_list)
+
+    def update_shuffle_list(self):
+        self.shuffle_list = sample(self.shuffle_list, self.frame_num)
+
+    def frames_shuffle(self, input_tensor: torch.Tensor) -> torch.Tensor:
+        pass
+
 
 
 if __name__ == '__main__':  # UCF101データセットの読み込みテストを行う
@@ -69,8 +79,9 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_path', type=str, required=True)
-    parser.add_argument('--batch_size', type=int, default=8, required=False)
+    parser.add_argument('--batch_size', type=int, default=2, required=False)
     parser.add_argument('--depth', type=int, default=1, required=False)
+    parser.add_argument('--frame_num', type=int, default=4, required=False)
 
     args = parser.parse_args()
 
@@ -87,8 +98,14 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
         if cv2.waitKey(0) & 0xFF == ord('q'):
             exit(0)
 
+    from random import shuffle
+    import torch
+    shuffle_list = list(range(args.frame_num))
+    for input_images in data_loader:
+        shuffle(shuffle_list)
+        labels = torch.tensor(shuffle_list)
+        print(f'{labels = }')
 
-    for input_images, input_label in data_loader:
-        print(input_label)
-        for images_per_batch in input_images:
-            image_show(images_per_batch)
+        # for images_per_batch in input_images:
+        #     image_show(images_per_batch)
+        image_show(input_images)

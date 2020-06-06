@@ -27,6 +27,8 @@ parser.add_argument('--use_bidirectional', action='store_true')
 parser.add_argument('--learning_rate', type=float, default=0.01, required=False)
 parser.add_argument('--model_save_path', type=str, required=False)
 parser.add_argument('--model_load_path', type=str, required=False)
+parser.add_argument('--no_reset_log_file', action='store_true')
+parser.add_argumetn('--load_epoch_num', action='store_true')
 
 args = parser.parse_args()
 batch_size = args.batch_size
@@ -55,17 +57,21 @@ test_iterate_len = len(test_loader)
 Net = CNN_LSTM(args.class_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
 criterion = nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
+current_epoch = 0
 if args.model_load_path:
     checkpoint = load(args.model_load_path)
     Net.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     print('complete load model')
+    if args.load_epoch_num:
+        current_epoch = checkpoint['epoch']
 
 # ログファイルの生成
-with open(log_train_path, mode='w') as f:
-    f.write('epoch,loss,accuracy,time,learning_rate\n')
-with open(log_test_path, mode='w') as f:
-    f.write('epoch,loss,accuracy,time,learning_rate\n')
+if not args.no_reset_log_file:
+    with open(log_train_path, mode='w') as f:
+        f.write('epoch,loss,accuracy,time,learning_rate\n')
+    with open(log_test_path, mode='w') as f:
+        f.write('epoch,loss,accuracy,time,learning_rate\n')
 
 # CUDA環境の有無で処理を変更
 if args.use_cuda:
@@ -134,7 +140,6 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
 
 
 # 推論を実行
-current_epoch = 0
 try:
     for epoch in range(args.epoch_num):
         current_epoch = epoch
