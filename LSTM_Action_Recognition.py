@@ -59,13 +59,6 @@ Net = CNN_LSTM(args.class_num, pretrained=args.use_pretrained_model, bidirection
 criterion = nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
-if args.model_load_path:
-    checkpoint = torch.load(args.model_load_path)
-    Net.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    if args.load_epoch_num:
-        current_epoch = checkpoint['epoch']
-    print('complete load model')
 
 # ログファイルの生成
 if not args.no_reset_log_file:
@@ -81,6 +74,14 @@ if args.use_cuda:
     device = 'cuda'
 else:
     device = 'cpu'
+
+if args.model_load_path:
+    checkpoint = torch.load(args.model_load_path)
+    Net.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    if args.load_epoch_num:
+        current_epoch = checkpoint['epoch']
+    print('complete load model')
 
 # 双方向の有無で出力の取り方を変える
 if args.use_bidirectional:
