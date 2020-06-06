@@ -99,6 +99,10 @@ if args.model_load_path:
     print('complete load model')
 
 
+def inner_product_loss():
+    pass
+
+
 # VideoDataTrainDataSetの出力はフレームのみ．ラベルの取得はtrain_loader.dataset.shuffle_listを呼び出すこと
 # 訓練を行う
 def train(inputs):
