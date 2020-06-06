@@ -101,13 +101,17 @@ if args.model_load_path:
 
 def inner_product_loss(outputs: torch.Tensor) -> torch.Tensor:  # (seq_len, batch_size, class_num)
     seq_len = outputs.size()[0]
-    out = torch.zeros(seq_len * seq_len)
+    out = torch.zeros(seq_len * (seq_len - 1) / 2)
     outputs_ = outputs.permute(1, 0, 2)
+    index = 0
     for i in range(outputs_.size()[0]):  # (batch_size, seq_len, class_num)
         for j in range(seq_len):
-            for k in range(seq_len):
-                out[j + k] = torch.dot(outputs_[i][j], outputs_[i][j + k])
-    return out / (seq_len * seq_len)
+            for k in range(j, seq_len):
+                if i == k:
+                    continue
+                out[index] = torch.dot(outputs_[i][j], outputs_[i][k])
+                index += 1
+    return torch.mean(out)
 
 
 # VideoDataTrainDataSetの出力はフレームのみ．ラベルの取得はtrain_loader.dataset.shuffle_listを呼び出すこと
