@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 
 from CNN_LSTM_Model import CNN_LSTM
 from video_sort_train_loader import VideoSortTrainDataSet
+from video_sort_test_loader import VideoSortTestDataSet
 from video_test_loader import ucf101_test_path_load
 from video_train_loader import ucf101_train_path_load
 
@@ -29,6 +30,9 @@ parser.add_argument('--model_save_interval', type=int, default=50, required=Fals
 parser.add_argument('--train_label_path', type=str, required=True)
 parser.add_argument('--test_label_path', type=str, required=True)
 parser.add_argument('--class_path', type=str, required=True)
+parser.add_argument('--no_reset_log_file', action='store_true')
+parser.add_argument('--load_epoch_num', action='store_true')
+parser.add_argument('--interval_frames', type=int, default=4, required=False)
 
 args = parser.parse_args()
 batch_size = args.batch_size
@@ -51,12 +55,14 @@ json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w')
 train_loader = DataLoader(
     VideoSortTrainDataSet(
         frame_num=frame_num,
-        path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path)),
+        path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
+        interval_frame=args.interval_frames),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
-    VideoSortTrainDataSet(
+    VideoSortTestDataSet(
         frame_num=frame_num,
-        path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path)),
+        path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
+        interval_frame=args.interval_frames),
     batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)
 test_iterate_len = len(test_loader)
@@ -66,19 +72,14 @@ test_iterate_len = len(test_loader)
 Net = CNN_LSTM(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
 criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
-start_epoch = 0
-if args.model_load_path:
-    checkpoint = torch.load(args.model_load_path)
-    start_epoch = checkpoint['epoch']
-    Net.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    print('complete load model')
+current_epoch = 0
 
 # ログファイルの生成
-with open(log_train_path, mode='w') as f:
-    f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
-with open(log_test_path, mode='w') as f:
-    f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
+if not args.no_reset_log_file:
+    with open(log_train_path, mode='w') as f:
+        f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
+    with open(log_test_path, mode='w') as f:
+        f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
 
 # CUDA環境の有無で処理を変更
 if args.use_cuda:
@@ -88,24 +89,46 @@ if args.use_cuda:
 else:
     device = 'cpu'
 
+# モデルの読み込み
+if args.model_load_path:
+    checkpoint = torch.load(args.model_load_path)
+    Net.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    if args.load_epoch_num:
+        current_epoch = checkpoint['epoch']
+    print('complete load model')
 
+
+# VideoDataTrainDataSetの出力はフレームのみ．ラベルの取得はtrain_loader.dataset.shuffle_listを呼び出すこと
 # 訓練を行う
-def train(inputs, labels):
+def train(inputs):
     # 演算開始. start calculate.
-    outputs = Net(inputs)  # この記述方法で順伝搬が行われる
+    train_loader.dataset.update_shuffle_list()
+    """
+    [2, 3, 0, 1]
+    -> [[2, 3, 0, 1],
+        [2, 3, 0, 1]]
+    """
+    labels = torch.tensor(train_loader.dataset.shuffle_list)
+    labels = labels.expand(batch_size, frame_num)
+    labels = labels.to(device, non_blocking=True)
+    outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
-    loss = criterion(outputs, labels)  # Loss値を計算
+    loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
-    return outputs, loss.item()
+    return outputs, loss.item(), labels
 
 
+# VideoDataTestDataSetの出力は(フレーム，ラベル)である．
 # テストを行う
-def test(inputs, labels):
+def test(inputs):
     with torch.no_grad():  # 勾配計算が行われないようにする
-        outputs = Net(inputs)  # この記述方法で順伝搬が行われる
-        loss = criterion(outputs, labels)  # Loss値を計算
-    return outputs, loss.item()
+        labels = torch.tensor(inputs[1])
+        labels = labels.to(device, non_blocking=True)
+        outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる
+        loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
+    return outputs, loss.item(), labels
 
 
 # 推論を行う
@@ -117,16 +140,15 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
 
     for i, data in enumerate(data_loader):
         # 前処理
-        inputs, labels = data
-        labels = labels.to(device, non_blocking=True)
+        inputs = data
         temp_batch_size = len(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
         # 演算開始. start calculate.
-        outputs, loss = calcu(inputs, labels)
+        outputs, loss, labels = calcu(inputs)
 
         # 後処理
-        predicted = torch.max(outputs, 2)[1]
+        predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]
         per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
         full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
         epoch_per_fit_accuracy += per_fit_accuracy
@@ -159,9 +181,8 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
 #         }, args.model_save_path)
 
 # 推論を実行
-current_epoch = 0
 try:
-    for epoch in range(args.epoch_num):
+    for epoch in range(current_epoch, args.epoch_num):
         current_epoch = epoch
         Net.train()
         estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
