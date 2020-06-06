@@ -16,6 +16,9 @@ class CNN_LSTM(nn.Module):
         self.resnet18 = nn.Sequential(*resnet18_modules_cut)
         resnet18_last_dim = 512
 
+        # for layer in self.resnet18.parameters():
+        #     layer.requires_grad = False
+
         lstm_dim = 512
         if bidirectional:
             self.lstm = nn.LSTM(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
