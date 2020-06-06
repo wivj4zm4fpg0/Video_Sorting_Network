@@ -124,7 +124,8 @@ def train(inputs):
 # テストを行う
 def test(inputs):
     with torch.no_grad():  # 勾配計算が行われないようにする
-        labels = torch.tensor(inputs[1])
+        # labels = torch.tensor(inputs[1])
+        labels = inputs[1]
         labels = labels.to(device, non_blocking=True)
         outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる
         loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
@@ -132,7 +133,7 @@ def test(inputs):
 
 
 # 推論を行う
-def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, iterate_len: int):
+def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, iterate_len: int, get_batch_size_func):
     epoch_loss = 0
     epoch_full_fit_accuracy = 0
     epoch_per_fit_accuracy = 0
@@ -141,7 +142,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
     for i, data in enumerate(data_loader):
         # 前処理
         inputs = data
-        temp_batch_size = len(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
+        temp_batch_size = get_batch_size_func(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
         # 演算開始. start calculate.
@@ -185,9 +186,9 @@ try:
     for epoch in range(current_epoch, args.epoch_num):
         current_epoch = epoch
         Net.train()
-        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
+        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x))
         Net.eval()
-        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
+        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len, lambda x: len(x[0]))
 except KeyboardInterrupt:  # Ctrl-Cで保存．
     if args.model_save_path:
         torch.save({
@@ -196,6 +197,7 @@ except KeyboardInterrupt:  # Ctrl-Cで保存．
             'optimizer_state_dict': optimizer.state_dict(),
         }, args.model_save_path)
         print('complete save model')
+        exit(0)
 
 if args.model_save_path:
     torch.save({
