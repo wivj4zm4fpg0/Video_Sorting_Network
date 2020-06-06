@@ -111,7 +111,6 @@ def train(inputs):
     """
     labels = torch.tensor(train_loader.dataset.shuffle_list)
     labels = labels.expand(inputs.size()[0], frame_num)
-    print(f'{inputs.size()[0]}')
     labels = labels.to(device, non_blocking=True)
     outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
