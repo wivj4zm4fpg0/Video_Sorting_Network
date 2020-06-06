@@ -20,11 +20,12 @@ class CNN_LSTM(nn.Module):
         #     layer.requires_grad = False
 
         lstm_dim = 512
+        batch_first = False
         if bidirectional:
             self.lstm = nn.LSTM(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
-                                batch_first=True)
+                                batch_first=batch_first)
         else:
-            self.lstm = nn.LSTM(resnet18_last_dim, lstm_dim, bidirectional=False, num_layers=2, batch_first=True)
+            self.lstm = nn.LSTM(resnet18_last_dim, lstm_dim, bidirectional=False, num_layers=2, batch_first=batch_first)
 
         self.fc = nn.Linear(lstm_dim, class_num)
         nn.init.kaiming_normal_(self.fc.weight)
@@ -36,12 +37,17 @@ class CNN_LSTM(nn.Module):
         sequence_length = x.shape[1]
 
         # (バッチサイズ x RNNへの入力数, チャンネル数, 解像度, 解像度)の4次元配列に変換する
-        x = x.view(batch_size * sequence_length, x.shape[2], x.shape[3], x.shape[4])
-        x = self.resnet18(x)
-        x = x.view(batch_size, sequence_length, -1)
+        # x = x.view(batch_size * sequence_length, x.shape[2], x.shape[3], x.shape[4])
+        # x = self.resnet18(x)
+        # x = x.view(batch_size, sequence_length, -1)
+        # output_shape -> (batch_size, seq_len, data_size)
 
         # 非推奨．CNNが学習されないっぽい．no recommended. It seems that CNN is not learned.
         # x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(batch_size)])
+
+        x = x.permute(1, 0, 2)
+        x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(sequence_length)])
+        # output_shape -> (seq_len, batch_size, data_size)
 
         # 非推奨．CNNが学習されないっぽい．no recommended. It seems that CNN is not learned.
         # resnet18_last_dim = 512
@@ -54,7 +60,7 @@ class CNN_LSTM(nn.Module):
 
         x = self.lstm(x)[0]
         x = self.fc(x)
-        return x  # (seq_len, batch_size, クラス数}の形になっている
+        return x
 
 
 if __name__ == '__main__':
