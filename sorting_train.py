@@ -144,8 +144,8 @@ def test(inputs):
 
 
 # 推論を行う
-def estimate(data_loader: DataLoader, calc: function, subset: str, epoch_num: int, log_file: str, iterate_len: int,
-             get_batch_size_func: function):
+def estimate(data_loader: DataLoader, calc, subset: str, epoch_num: int, log_file: str, iterate_len: int,
+             get_batch_size_func):
     epoch_loss = 0
     epoch_full_fit_accuracy = 0
     epoch_per_fit_accuracy = 0
