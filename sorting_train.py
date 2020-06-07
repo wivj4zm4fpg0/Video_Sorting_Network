@@ -208,7 +208,8 @@ try:
     for epoch in range(current_epoch, args.epoch_num):
         current_epoch = epoch
         Net.train()
-        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x))
+        # estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x))
+        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x[0]))
         Net.eval()
         estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len, lambda x: len(x[0]))
 except KeyboardInterrupt:  # Ctrl-Cで保存．
