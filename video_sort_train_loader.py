@@ -38,8 +38,6 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
-        # print(f'{self.data_list = }')
-        # print(f'{self.data_list[index] = }')
         frame_list = \
             [os.path.join(self.data_list[index][0], frame) for frame in natsorted(os.listdir(self.data_list[index][0]))]
         frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
@@ -49,6 +47,7 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
         start_index = random.randint(0, video_len - self.crop_video_len)
         frame_indices = list(range(video_len))[start_index:start_index + self.crop_video_len:self.interval_len + 1]
         frame_indices = [[frame_indices[i], i] for i in range(self.frame_num)]
+
         shuffle_list = list(range(self.frame_num))
         shuffle_list = random.sample(shuffle_list, self.frame_num)
         shuffle_frame_indices = [0] * self.frame_num
@@ -65,9 +64,12 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
 
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
         # リスト内包表記で検索
+
         # video_tensor = [pre_processing(frame_list[i]) for i in frame_indices]
         video_tensor = [pre_processing(frame_list[i]) for i in shuffle_frame_indices[:, 0]]
+
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
+
         # return video_tensor  # 入力画像とそのラベルをタプルとして返す
         return video_tensor, shuffle_frame_indices[:, 1]  # 入力画像とそのラベルをタプルとして返す
 

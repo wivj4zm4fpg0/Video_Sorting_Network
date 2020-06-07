@@ -45,12 +45,6 @@ if not args.model_save_path:
 json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w'),
           ensure_ascii=False, indent=4, sort_keys=True, separators=(',', ': '))
 
-# # データセットを読み込む
-# train_loader = DataLoader(
-#     VideoSortTrainDataSet(frame_num=frame_num, path_load=recursive_video_path_load(args.dataset_path, args.depth)),
-#     batch_size=batch_size, shuffle=True)
-# train_iterate_len = len(train_loader)
-
 # データセットを読み込む
 train_loader = DataLoader(
     VideoSortTrainDataSet(
@@ -134,8 +128,8 @@ def train(inputs):
     outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
     # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
-    # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
-    loss = criterion(outputs, labels)  # Loss値を計算
+    loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
+    # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
     return outputs, loss.item(), labels
@@ -150,13 +144,13 @@ def test(inputs):
         labels = labels.to(device, non_blocking=True)
         outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる
         # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
-        # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
-        loss = criterion(outputs, labels)  # Loss値を計算
+        loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
+        # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
     return outputs, loss.item(), labels
 
 
 # 推論を行う
-def estimate(data_loader: DataLoader, calc, subset: str, epoch_num: int, log_file: str, iterate_len: int,
+def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, log_file: str, iterate_len: int,
              get_batch_size_func):
     epoch_loss = 0
     epoch_full_fit_accuracy = 0
@@ -170,11 +164,11 @@ def estimate(data_loader: DataLoader, calc, subset: str, epoch_num: int, log_fil
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
         # 演算開始. start calculate.
-        outputs, loss, labels = calc(inputs)
+        outputs, loss, labels = calc_func(inputs)
 
         # 後処理
-        # predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]
-        predicted = torch.max(outputs, 2)[1]
+        predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
+        # predicted = torch.max(outputs, 2)[1]   # batch_first = True
         per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
         full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
         epoch_per_fit_accuracy += per_fit_accuracy
@@ -194,17 +188,6 @@ def estimate(data_loader: DataLoader, calc, subset: str, epoch_num: int, log_fil
         f.write(f'{epoch_num + 1},{loss_avg},{full_fit_accuracy_avg},{per_fit_accuracy_avg},' +
                 f'{epoch_time},{learning_rate}\n')
 
-
-# # 推論を実行
-# for epoch in range(start_epoch, args.epoch_num):
-#     Net.train()
-#     estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
-#     if (epoch + 1) % args.model_save_interval == 0:
-#         torch.save({
-#             'epoch': (epoch + 1),
-#             'model_state_dict': Net.state_dict(),
-#             'optimizer_state_dict': optimizer.state_dict(),
-#         }, args.model_save_path)
 
 # 推論を実行
 try:
