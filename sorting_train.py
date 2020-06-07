@@ -93,9 +93,10 @@ if args.model_load_path:
     print('complete load model')
 
 
-def inner_product_loss(outputs: torch.Tensor) -> torch.Tensor:  # (seq_len, batch_size, class_num)
+def inner_product_loss(outputs: torch.Tensor) -> torch.Tensor:
     seq_len = outputs.size()[0]
-    outputs_ = outputs.permute(1, 0, 2)
+    # outputs_ = outputs.permute(1, 0, 2)  # batch_first = False
+    outputs_ = outputs  # batch_first = True
     out = torch.zeros(outputs_.size()[0], seq_len * (seq_len - 1) // 2)
     out = out.to(device, non_blocking=True)
     for i in range(outputs_.size()[0]):  # (batch_size, seq_len, class_num)
@@ -128,8 +129,9 @@ def train(inputs):
     outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
     # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
-    loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
+    # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
     # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
+    loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
     return outputs, loss.item(), labels
@@ -144,8 +146,9 @@ def test(inputs):
         labels = labels.to(device, non_blocking=True)
         outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる
         # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
-        loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
+        # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
         # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
+        loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
     return outputs, loss.item(), labels
 
 
@@ -167,8 +170,8 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
         outputs, loss, labels = calc_func(inputs)
 
         # 後処理
-        predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
-        # predicted = torch.max(outputs, 2)[1]   # batch_first = True
+        # predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
+        predicted = torch.max(outputs, 2)[1]  # batch_first = True
         per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
         full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
         epoch_per_fit_accuracy += per_fit_accuracy
