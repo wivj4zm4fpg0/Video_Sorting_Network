@@ -110,9 +110,10 @@ def inner_product_loss(outputs: torch.Tensor) -> torch.Tensor:  # (seq_len, batc
             for k in range(j, seq_len):
                 if j == k:
                     continue
-                out[i][index] = torch.dot(outputs_[i][j], outputs_[i][k])
+                out[i][index] = torch.abs(torch.dot(outputs_[i][j], outputs_[i][k]))
                 index += 1
-    return torch.mean(out)
+    # return torch.mean(out)
+    return torch.sum(out)
 
 
 # VideoDataTrainDataSetの出力はフレームのみ．ラベルの取得はtrain_loader.dataset.shuffle_listを呼び出すこと
