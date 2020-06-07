@@ -11,12 +11,12 @@ class CNN_LSTM(nn.Module):
 
         assert task == 'classification' or task == 'sorting'
         if task == 'classification':
-            # self.forward_method = self.classification_forward
-            self.forward = self.classification_forward
+            self.forward_method = self.classification_forward
+            # self.forward = self.classification_forward
             batch_first = False
         elif task == 'sorting':
-            # self.forward_method = self.sorting_forward
-            self.forward = self.sorting_forward
+            self.forward_method = self.sorting_forward
+            # self.forward = self.sorting_forward
             batch_first = True
 
         resnet18_modules = [module for module in (resnet18(pretrained=pretrained).modules())][1:-1]
@@ -37,24 +37,24 @@ class CNN_LSTM(nn.Module):
         self.fc = nn.Linear(lstm_dim, class_num)
         nn.init.kaiming_normal_(self.fc.weight)
 
-    # # xの形は(バッチサイズ, RNNへの入力数, チャンネル数, 解像度, 解像度)の5次元配列である必要がある
-    # def forward(self, x: torch.Tensor) -> torch.Tensor:
-    #
-    #     # (バッチサイズ x RNNへの入力数, チャンネル数, 解像度, 解像度)の4次元配列に変換する
-    #     # x = x.view(batch_size * sequence_length, x.shape[2], x.shape[3], x.shape[4])
-    #     # x = self.resnet18(x)
-    #     # x = x.view(batch_size, sequence_length, -1)
-    #     # output_shape -> (batch_size, seq_len, data_size)
-    #
-    #     # resnet18_last_dim = 512
-    #     # fs = torch.zeros(batch_size, sequence_length, resnet18_last_dim).cuda()
-    #     # for i in range(batch_size):
-    #     #     cnn = self.resnet18(x[i])
-    #     #     cnn = torch.flatten(cnn, 1)
-    #     #     fs[i, :, :] = cnn
-    #     # x = fs
-    #
-    #     return self.forward_method(x)
+    # xの形は(バッチサイズ, RNNへの入力数, チャンネル数, 解像度, 解像度)の5次元配列である必要がある
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    
+        # (バッチサイズ x RNNへの入力数, チャンネル数, 解像度, 解像度)の4次元配列に変換する
+        # x = x.view(batch_size * sequence_length, x.shape[2], x.shape[3], x.shape[4])
+        # x = self.resnet18(x)
+        # x = x.view(batch_size, sequence_length, -1)
+        # output_shape -> (batch_size, seq_len, data_size)
+    
+        # resnet18_last_dim = 512
+        # fs = torch.zeros(batch_size, sequence_length, resnet18_last_dim).cuda()
+        # for i in range(batch_size):
+        #     cnn = self.resnet18(x[i])
+        #     cnn = torch.flatten(cnn, 1)
+        #     fs[i, :, :] = cnn
+        # x = fs
+    
+        return self.forward_method(x)
 
     def classification_forward(self, x: torch.Tensor) -> torch.Tensor:
         sequence_length = x.shape[1]

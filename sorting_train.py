@@ -65,6 +65,8 @@ test_iterate_len = len(test_loader)
 # resnet18を取得
 Net = CNN_LSTM(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional,
                task='sorting')
+print(f'{Net = }')
+print(f'{Net.forward = }')
 criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
@@ -109,8 +111,8 @@ def inner_product_loss(outputs: torch.Tensor) -> torch.Tensor:
                     continue
                 out[i][index] = torch.abs(torch.dot(outputs_[i][j], outputs_[i][k]))
                 index += 1
-    # return torch.mean(out)
-    return torch.sum(out)
+    return torch.mean(out) * 0.1
+    # return torch.sum(out)
 
 
 # VideoDataTrainDataSetの出力はフレームのみ．ラベルの取得はtrain_loader.dataset.shuffle_listを呼び出すこと
@@ -132,8 +134,8 @@ def train(inputs):
     optimizer.zero_grad()  # 勾配を初期化
     # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
     # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
-    # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
-    loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
+    loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
+    # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
     return outputs, loss.item(), labels
@@ -149,8 +151,8 @@ def test(inputs):
         outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる
         # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
         # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
-        # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
-        loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
+        loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
+        # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
     return outputs, loss.item(), labels
 
 
