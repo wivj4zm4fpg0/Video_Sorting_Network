@@ -1,5 +1,5 @@
 import os
-from random import randint, sample
+import random
 
 import cv2
 import numpy as np
@@ -46,7 +46,7 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
         video_len = len(frame_list)
         assert self.crop_video_len < video_len
         # {frame_index + 0, frame_index + 1, ..., frame_index + self.frame_num - 1}番号のフレームを取得するのに使う
-        start_index = randint(0, video_len - self.crop_video_len)
+        start_index = random.randint(0, video_len - self.crop_video_len)
         frame_indices = list(range(video_len))[start_index:start_index + self.crop_video_len:self.interval_len + 1]
         frame_indices = [[frame_indices[i], i] for i in range(self.frame_num)]
         shuffle_list = list(range(self.frame_num))
@@ -75,7 +75,7 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
         return len(self.data_list)
 
     def update_shuffle_list(self):
-        self.shuffle_list = sample(self.shuffle_list, self.frame_num)
+        self.shuffle_list = random.sample(self.shuffle_list, self.frame_num)
 
     def frames_shuffle(self, input_tensor: torch.Tensor) -> torch.Tensor:
         shuffle_input = torch.zeros(input_tensor.size())
