@@ -120,16 +120,18 @@ def inner_product_loss(outputs: torch.Tensor) -> torch.Tensor:  # (seq_len, batc
 # 訓練を行う
 def train(inputs):
     # 演算開始. start calculate.
-    train_loader.dataset.update_shuffle_list()
+    # train_loader.dataset.update_shuffle_list()
     """
     [2, 3, 0, 1]
     -> [[2, 3, 0, 1],
         [2, 3, 0, 1]]
     """
-    labels = torch.tensor(train_loader.dataset.shuffle_list)
-    labels = labels.expand(inputs.size()[0], frame_num)
+    # labels = torch.tensor(train_loader.dataset.shuffle_list)
+    # labels = labels.expand(inputs.size()[0], frame_num)
+    labels = inputs[1]
     labels = labels.to(device, non_blocking=True)
-    outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
+    # outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
+    outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
     # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
     loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算

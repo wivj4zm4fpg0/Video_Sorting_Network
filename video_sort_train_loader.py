@@ -48,6 +48,13 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
         # {frame_index + 0, frame_index + 1, ..., frame_index + self.frame_num - 1}番号のフレームを取得するのに使う
         start_index = randint(0, video_len - self.crop_video_len)
         frame_indices = list(range(video_len))[start_index:start_index + self.crop_video_len:self.interval_len + 1]
+        frame_indices = [[frame_indices[i], i] for i in range(self.frame_num)]
+        shuffle_list = list(range(self.frame_num))
+        shuffle_list = random.sample(shuffle_list, self.frame_num)
+        shuffle_frame_indices = [0] * self.frame_num
+        for i, shuffle_value in enumerate(shuffle_list):
+            shuffle_frame_indices[i] = frame_indices[shuffle_value]
+        shuffle_frame_indices = torch.tensor(shuffle_frame_indices)
 
         # transformsの設定
         # self.pre_processing.transforms[0].set_degree()  # RandomRotationの回転角度を設定
@@ -58,9 +65,11 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
 
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
         # リスト内包表記で検索
-        video_tensor = [pre_processing(frame_list[i]) for i in frame_indices]
+        # video_tensor = [pre_processing(frame_list[i]) for i in frame_indices]
+        video_tensor = [pre_processing(frame_list[i]) for i in shuffle_frame_indices[:, 0]]
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
-        return video_tensor  # 入力画像とそのラベルをタプルとして返す
+        # return video_tensor  # 入力画像とそのラベルをタプルとして返す
+        return video_tensor, shuffle_frame_indices[:, 1]  # 入力画像とそのラベルをタプルとして返す
 
     def __len__(self) -> int:  # データセットの数を返すようにする
         return len(self.data_list)
