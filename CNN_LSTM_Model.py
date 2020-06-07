@@ -25,7 +25,8 @@ class CNN_LSTM(nn.Module):
         # nn.init.kaiming_normal_(self.pre_fc2.weight)
 
         lstm_dim = 512
-        batch_first = False
+        # batch_first = False
+        batch_first = True
         if bidirectional:
             # self.lstm = nn.LSTM(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
             #                     batch_first=batch_first)
@@ -61,8 +62,9 @@ class CNN_LSTM(nn.Module):
         # x = torch.stack([self.pre_fc2(self.pre_fc1(torch.flatten(self.resnet18(x[i]), 1))) for i in range(batch_size)])
         # x = x.permute(1, 0, 2)  # (batch_size, seq_len, data_size) -> (seq_len, batch_size, data_size)
 
-        x = x.permute(1, 0, 2, 3, 4)  # (batch_size, seq_len, img) -> (seq_len, batch_size, img)
+        # x = x.permute(1, 0, 2, 3, 4)  # (batch_size, seq_len, img) -> (seq_len, batch_size, img)
         x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(sequence_length)])
+        # (batch_size, seq_len, data_size)
         # output_shape -> (seq_len, batch_size, data_size)
 
         # 非推奨．CNNが学習されないっぽい．no recommended. It seems that CNN is not learned.

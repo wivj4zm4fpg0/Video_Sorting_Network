@@ -118,10 +118,13 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     import torch
 
     for input_images in data_loader:
-        data_loader.dataset.update_shuffle_list()
-        inputs = data_loader.dataset.frames_shuffle(input_images)
-        labels = torch.tensor(data_loader.dataset.shuffle_list)
+        # data_loader.dataset.update_shuffle_list()
+        # inputs = data_loader.dataset.frames_shuffle(input_images)
+        # labels = torch.tensor(data_loader.dataset.shuffle_list)
+        labels = input_images[1]
         print(f'{labels = }')
-        for images_per_batch in inputs:
+        for images_per_batch in input_images[0]:
             image_show(images_per_batch)
+        # for images_per_batch in inputs:
+        #     image_show(images_per_batch)
         # image_show(inputs)

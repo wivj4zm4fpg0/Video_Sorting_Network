@@ -134,7 +134,8 @@ def train(inputs):
     outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
     # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
-    loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
+    # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
+    loss = criterion(outputs, labels)  # Loss値を計算
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
     return outputs, loss.item(), labels
@@ -149,7 +150,8 @@ def test(inputs):
         labels = labels.to(device, non_blocking=True)
         outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる
         # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
-        loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
+        # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算
+        loss = criterion(outputs, labels)  # Loss値を計算
     return outputs, loss.item(), labels
 
 
@@ -171,7 +173,8 @@ def estimate(data_loader: DataLoader, calc, subset: str, epoch_num: int, log_fil
         outputs, loss, labels = calc(inputs)
 
         # 後処理
-        predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]
+        # predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]
+        predicted = torch.max(outputs, 2)[1]
         per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
         full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
         epoch_per_fit_accuracy += per_fit_accuracy
