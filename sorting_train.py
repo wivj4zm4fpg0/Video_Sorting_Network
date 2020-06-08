@@ -89,6 +89,7 @@ if args.model_load_path:
     checkpoint = torch.load(args.model_load_path)
     Net.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    optimizer.lr = args.learning_rate
     if args.load_epoch_num:
         current_epoch = checkpoint['epoch']
     print('complete load model')
