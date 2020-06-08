@@ -39,10 +39,17 @@ class VideoSort3DCNNTrainDataSet(VideoTrainDataSet):  # video_train_loader.Video
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
-        frame_list = \
-            [os.path.join(self.data_list[index][0], frame) for frame in natsorted(os.listdir(self.data_list[index][0]))]
-        frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
-        video_len = len(frame_list)
+        frame_list = None
+        video_len = None
+        while True:
+            frame_list = [os.path.join(self.data_list[index][0], frame) for frame in natsorted(os.listdir(self.data_list[index][0]))]
+            frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
+            video_len = len(frame_list)
+            if self.cnn_frame_num * self.frame_num < video_len:
+                break
+            else:
+                print('aaaaaaaaaaaaaaaaaaaa')
+                index = random.randint(0, len(self.data_list))
 
         start_index = random.randint(0, video_len - self.cnn_frame_num * self.frame_num)
         frame_indices = list(range(video_len))[
