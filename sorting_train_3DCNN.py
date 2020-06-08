@@ -31,7 +31,7 @@ parser.add_argument('--test_label_path', type=str, required=True)
 parser.add_argument('--class_path', type=str, required=True)
 parser.add_argument('--no_reset_log_file', action='store_true')
 parser.add_argument('--load_epoch_num', action='store_true')
-parser.add_argument('--cnn3d_frame_num', type=int, default=12, required=False)
+parser.add_argument('--cnn3d_frame_num', type=int, default=16, required=False)
 
 args = parser.parse_args()
 batch_size = args.batch_size
@@ -166,7 +166,7 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
     for i, data in enumerate(data_loader):
         # 前処理
         inputs = data
-        if inputs[0] == 'shortage_frames':
+        if type(inputs[0]) == torch.Tensor:
             continue
         temp_batch_size = get_batch_size_func(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
