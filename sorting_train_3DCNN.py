@@ -31,10 +31,12 @@ parser.add_argument('--test_label_path', type=str, required=True)
 parser.add_argument('--class_path', type=str, required=True)
 parser.add_argument('--no_reset_log_file', action='store_true')
 parser.add_argument('--load_epoch_num', action='store_true')
+parser.add_argument('--cnn3d_frame_num', type=int, default=12, required=False)
 
 args = parser.parse_args()
 batch_size = args.batch_size
 frame_num = args.frame_num
+cnn3d_frame_num = args.cnn3d_frame_num
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
 log_test_path = os.path.join(args.output_dir, 'log_test.csv')
 os.makedirs(args.output_dir, exist_ok=True)
@@ -47,12 +49,14 @@ json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w')
 train_loader = DataLoader(
     VideoSort3DCNNTrainDataSet(
         frame_num=frame_num,
-        path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path), ),
+        path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
+        cnn_frame_num=cnn3d_frame_num),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
     VideoSort3DCNNTrainDataSet(
         frame_num=frame_num,
-        path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path), ),
+        path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
+        cnn_frame_num=cnn3d_frame_num),
     batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)
 test_iterate_len = len(test_loader)
