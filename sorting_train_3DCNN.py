@@ -166,8 +166,6 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
     for i, data in enumerate(data_loader):
         # 前処理
         inputs = data
-        if type(inputs[0]) == torch.Tensor:
-            continue
         temp_batch_size = get_batch_size_func(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
