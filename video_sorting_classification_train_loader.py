@@ -28,7 +28,7 @@ def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):
     return data_list
 
 
-class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
+class VideoSortingClassificationTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
 
     def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_load: list = None,
                  random_crop_size: int = 224, interval_frame: int = 4):
