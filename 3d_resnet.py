@@ -1,5 +1,4 @@
 # this file is quoted from https://github.com/kenshohara/3D-ResNets-PyTorch
-import math
 from functools import partial
 
 import torch

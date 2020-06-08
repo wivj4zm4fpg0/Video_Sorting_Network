@@ -28,17 +28,14 @@ def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):
     return data_list
 
 
-class VideoSortingClassificationTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
+class VideoSortingComparisonTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
 
-    def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_load: list = None,
-                 random_crop_size: int = 224, interval_frame: int = 4):
+    def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 16, path_load: list = None,
+                 random_crop_size: int = 224, split_len=4):
         super().__init__(pre_processing, frame_num, path_load, random_crop_size)
-        self.crop_video_len = (frame_num - 1) * interval_frame + frame_num
-        self.interval_len = interval_frame
-        self.shuffle_list = list(range(frame_num))
-        self.labels = {}
-        for i, v in enumerate(itertools.permutations(list(range(frame_num)), frame_num)):
-            self.labels[v] = i
+        assert frame_num % split_len == 0
+        self.crop_frame_len = frame_num // split_len
+        self.shuffle_list = list(range(split_len))
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
@@ -46,9 +43,9 @@ class VideoSortingClassificationTrainDataSet(VideoTrainDataSet):  # video_train_
             [os.path.join(self.data_list[index][0], frame) for frame in natsorted(os.listdir(self.data_list[index][0]))]
         frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
         video_len = len(frame_list)
-        assert self.crop_video_len < video_len
+        assert self.frame_num < video_len
         # {frame_index + 0, frame_index + 1, ..., frame_index + self.frame_num - 1}番号のフレームを取得するのに使う
-        start_index = random.randint(0, video_len - self.crop_video_len)
+        start_index = random.randint(0, video_len - self.frame_num)
         frame_indices = list(range(video_len))[start_index:start_index + self.crop_video_len:self.interval_len + 1]
         frame_indices = [[frame_indices[i], i] for i in range(self.frame_num)]
 
@@ -104,7 +101,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     args = parser.parse_args()
 
     data_loader = DataLoader(
-        VideoSortingClassificationTrainDataSet(
+        VideoSortingComparisonTrainDataSet(
             path_load=recursive_video_path_load(args.dataset_path, args.depth),
             interval_frame=0
         ),
