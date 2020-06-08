@@ -156,10 +156,9 @@ try:
     for epoch in range(current_epoch, args.epoch_num):
         current_epoch = epoch
         Net.train()
-        # estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x))
-        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x[0]))
+        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
         Net.eval()
-        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len, lambda x: len(x[0]))
+        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
 except KeyboardInterrupt:  # Ctrl-Cで保存．
     if args.model_save_path:
         torch.save({
