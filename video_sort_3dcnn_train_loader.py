@@ -43,7 +43,8 @@ class VideoSort3DCNNTrainDataSet(VideoTrainDataSet):  # video_train_loader.Video
             [os.path.join(self.data_list[index][0], frame) for frame in natsorted(os.listdir(self.data_list[index][0]))]
         frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
         video_len = len(frame_list)
-        assert self.cnn_frame_num * self.frame_num < video_len
+        if self.cnn_frame_num * self.frame_num < video_len:
+            return 'shortage_frames', 0
 
         start_index = random.randint(0, video_len - self.cnn_frame_num * self.frame_num)
         frame_indices = list(range(video_len))[
