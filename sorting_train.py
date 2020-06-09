@@ -64,7 +64,7 @@ test_iterate_len = len(test_loader)
 # 初期設定
 # resnet18を取得
 Net = CNN_LSTM(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional,
-               task='sorting')
+               task='classification')
 criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
@@ -132,8 +132,8 @@ def train(inputs):
     outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
     # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
-    # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
-    loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
+    loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
+    # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
     # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
@@ -149,8 +149,8 @@ def test(inputs):
         labels = labels.to(device, non_blocking=True)
         outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる
         # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
-        # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
-        loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
+        loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
+        # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
         # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
     return outputs, loss.item(), labels
 
@@ -173,8 +173,8 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
         outputs, loss, labels = calc_func(inputs)
 
         # 後処理
-        # predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
-        predicted = torch.max(outputs, 2)[1]  # batch_first = True
+        predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
+        # predicted = torch.max(outputs, 2)[1]  # batch_first = True
         per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
         full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
         epoch_per_fit_accuracy += per_fit_accuracy
