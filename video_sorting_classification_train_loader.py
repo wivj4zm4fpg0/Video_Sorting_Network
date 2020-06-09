@@ -54,7 +54,7 @@ class VideoSortingClassificationTrainDataSet(VideoTrainDataSet):  # video_train_
 
         shuffle_list = list(range(self.frame_num))
         shuffle_list = random.sample(shuffle_list, self.frame_num)
-        shuffle_frame_indices = [0] * self.frame_num
+        shuffle_frame_indices = list(range(self.frame_num))
         for i, shuffle_value in enumerate(shuffle_list):
             shuffle_frame_indices[i] = frame_indices[shuffle_value]
         shuffle_frame_indices = torch.tensor(shuffle_frame_indices)
@@ -70,7 +70,7 @@ class VideoSortingClassificationTrainDataSet(VideoTrainDataSet):  # video_train_
         # リスト内包表記で検索
 
         # video_tensor = [pre_processing(frame_list[i]) for i in frame_indices]
-        video_tensor = [pre_processing(frame_list[i]) for i in shuffle_frame_indices[:, 0]]
+        video_tensor = [pre_processing(frame_list[int(i)]) for i in shuffle_frame_indices[:, 0]]
 
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
 
@@ -106,7 +106,8 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     data_loader = DataLoader(
         VideoSortingClassificationTrainDataSet(
             path_load=recursive_video_path_load(args.dataset_path, args.depth),
-            interval_frame=0
+            interval_frame=0,
+            random_crop_size=180
         ),
         batch_size=args.batch_size, shuffle=False
     )
