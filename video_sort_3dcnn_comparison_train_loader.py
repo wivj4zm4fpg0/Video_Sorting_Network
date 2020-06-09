@@ -77,6 +77,7 @@ class VideoSort3DCNNComparisonTrainDataSet(VideoTrainDataSet):  # video_train_lo
                 label = torch.tensor(i)
             else:
                 output_videos.append(correct_video_tensor)
+        output_videos = torch.stack(output_videos)
 
         return output_videos, label  # 入力画像とそのラベルをタプルとして返す
 
