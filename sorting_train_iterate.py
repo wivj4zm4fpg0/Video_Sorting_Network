@@ -33,10 +33,12 @@ parser.add_argument('--class_path', type=str, required=True)
 parser.add_argument('--no_reset_log_file', action='store_true')
 parser.add_argument('--load_epoch_num', action='store_true')
 parser.add_argument('--interval_frames', type=int, default=4, required=False)
+parser.add_argument('--repetition_len', type=int, default=100, required=False)
 
 args = parser.parse_args()
 batch_size = args.batch_size
 frame_num = args.frame_num
+repetition_len = args.repetition_len
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
 log_test_path = os.path.join(args.output_dir, 'log_test.csv')
 os.makedirs(args.output_dir, exist_ok=True)
@@ -166,7 +168,6 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
         # 演算開始. start calculate.
-        repetition_len = 100
         for j in range(repetition_len):
             outputs, loss = calc_func(inputs, labels)
 
