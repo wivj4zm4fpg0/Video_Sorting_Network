@@ -51,7 +51,7 @@ class CNNLSTMCombination(nn.Module):
 
 
 if __name__ == '__main__':
-    model = CnnLSTMCombination()
+    model = CNNLSTMCombination()
     input = torch.randn(4, 3, 3, 90, 90)
     output = model(input)
     print(f'{output.shape=}')

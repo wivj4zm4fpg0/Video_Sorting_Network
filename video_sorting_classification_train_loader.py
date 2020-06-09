@@ -100,14 +100,15 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     parser.add_argument('--batch_size', type=int, default=3, required=False)
     parser.add_argument('--depth', type=int, default=1, required=False)
     parser.add_argument('--frame_num', type=int, default=4, required=False)
+    parser.add_argument('--interval_frame', type=int, default=0, required=False)
 
     args = parser.parse_args()
 
     data_loader = DataLoader(
         VideoSortingClassificationTrainDataSet(
             path_load=recursive_video_path_load(args.dataset_path, args.depth),
-            interval_frame=0,
-            random_crop_size=180
+            interval_frame=args.interval_frame,
+            random_crop_size=180,
         ),
         batch_size=args.batch_size, shuffle=False
     )
@@ -122,13 +123,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
 
 
     for input_images in data_loader:
-        # data_loader.dataset.update_shuffle_list()
-        # inputs = data_loader.dataset.frames_shuffle(input_images)
-        # labels = torch.tensor(data_loader.dataset.shuffle_list)
         labels = input_images[1]
         print(f'{labels = }')
         for images_per_batch in input_images[0]:
             image_show(images_per_batch)
-        # for images_per_batch in inputs:
-        #     image_show(images_per_batch)
-        # image_show(inputs)
