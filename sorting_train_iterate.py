@@ -150,7 +150,7 @@ def test(inputs, labels):
         loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
         # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
         # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
-    return outputs, loss.item(), labels
+    return outputs, loss.item()
 
 
 # 推論を行う
