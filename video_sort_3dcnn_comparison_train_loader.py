@@ -1,6 +1,6 @@
+import itertools
 import os
 import random
-import itertools
 
 import cv2
 import numpy as np
@@ -31,13 +31,13 @@ def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):
 class VideoSort3DCNNComparisonTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
 
     def __init__(self, pre_processing: transforms.Compose = None, frame_num=4, path_load: list = None,
-                 random_crop_size=224, cnn_frame_num=16, class_num=2):
+                 random_crop_size=224, cnn3d_frame_num=16, class_num=2):
         super().__init__(pre_processing, frame_num, path_load, random_crop_size)
-        assert cnn_frame_num % frame_num == 0
-        self.cnn_frame_num = cnn_frame_num
-        self.crop_frame_len = cnn_frame_num // frame_num
+        assert cnn3d_frame_num % frame_num == 0
+        self.cnn_frame_num = cnn3d_frame_num
+        self.crop_frame_len = cnn3d_frame_num // frame_num
         self.shuffle_list = list(range(frame_num))
-        self.class_num = 2
+        self.class_num = class_num
         self.frame_num = frame_num
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
@@ -68,12 +68,15 @@ class VideoSort3DCNNComparisonTrainDataSet(VideoTrainDataSet):  # video_train_lo
         correct_video_tensor = torch.stack(correct_video_tensor)
         incorrect_video_tensor = torch.stack(incorrect_video_tensor)
 
-        if random.randint(0, 1) == 0:
-            output_videos = torch.stack([correct_video_tensor, incorrect_video_tensor])
-            label = torch.tensor(1)
-        else:
-            output_videos = torch.stack([incorrect_video_tensor, correct_video_tensor])
-            label = torch.tensor(0)
+        incorrect_label = random.randint(0, self.class_num - 1)
+        output_videos = []
+        label = None
+        for i in range(self.class_num):
+            if i == incorrect_label:
+                output_videos.append(incorrect_video_tensor)
+                label = torch.tensor(i)
+            else:
+                output_videos.append(correct_video_tensor)
 
         return output_videos, label  # 入力画像とそのラベルをタプルとして返す
 
@@ -97,9 +100,10 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_path', type=str, required=True)
-    parser.add_argument('--batch_size', type=int, default=2, required=False)
+    parser.add_argument('--batch_size', type=int, default=1, required=False)
     parser.add_argument('--depth', type=int, default=1, required=False)
     parser.add_argument('--frame_num', type=int, default=4, required=False)
+    parser.add_argument('--class_num', type=int, default=3, required=False)
 
     args = parser.parse_args()
 
@@ -107,6 +111,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
         VideoSort3DCNNComparisonTrainDataSet(
             path_load=recursive_video_path_load(args.dataset_path, args.depth),
             random_crop_size=180,
+            class_num=args.class_num
         ),
         batch_size=args.batch_size, shuffle=False
     )
