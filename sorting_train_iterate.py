@@ -38,6 +38,7 @@ parser.add_argument('--repetition_len', type=int, default=100, required=False)
 args = parser.parse_args()
 batch_size = args.batch_size
 frame_num = args.frame_num
+interval_frames = args.interval_frames
 repetition_len = args.repetition_len
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
 log_test_path = os.path.join(args.output_dir, 'log_test.csv')
@@ -52,13 +53,13 @@ train_loader = DataLoader(
     VideoSortTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
-        interval_frame=args.interval_frames),
+        interval_frame=interval_frames),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
-    VideoSortTestDataSet(
+    VideoSortTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
-        interval_frame=args.interval_frames),
+        interval_frame=interval_frames),
     batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)
 test_iterate_len = len(test_loader)
