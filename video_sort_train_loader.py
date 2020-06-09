@@ -86,6 +86,23 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
                 shuffle_input[i][j] = input_tensor[i][shuffle_value]
         return shuffle_input
 
+    def shuffle(self, inputs: torch.Tensor, labels: torch.Tensor) -> tuple:
+        shuffle_list = list(range(self.frame_num))
+        random.shuffle(shuffle_list)
+        new_labels = []
+        new_inputs = []
+        for i in range(len(inputs)):
+            new_seq = []
+            new_label = []
+            for shuffle_value in shuffle_list:
+                new_label.append(labels[i][shuffle_value])
+                new_seq.append(inputs[i][shuffle_value])
+            new_labels.append(torch.stack(new_label))
+            new_inputs.append(torch.stack(new_seq))
+        new_labels = torch.stack(new_labels)
+        new_inputs = torch.stack(new_inputs)
+        return new_inputs, new_labels
+
 
 if __name__ == '__main__':  # UCF101データセットの読み込みテストを行う
 
@@ -102,7 +119,8 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     data_loader = DataLoader(
         VideoSortTrainDataSet(
             path_load=recursive_video_path_load(args.dataset_path, args.depth),
-            interval_frame=0
+            interval_frame=0,
+            random_crop_size=180
         ),
         batch_size=args.batch_size, shuffle=False
     )
@@ -116,17 +134,10 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
             exit(0)
 
 
-    from random import shuffle
-    import torch
-
-    for input_images in data_loader:
-        # data_loader.dataset.update_shuffle_list()
-        # inputs = data_loader.dataset.frames_shuffle(input_images)
-        # labels = torch.tensor(data_loader.dataset.shuffle_list)
-        labels = input_images[1]
-        print(f'{labels = }')
-        for images_per_batch in input_images[0]:
-            image_show(images_per_batch)
-        # for images_per_batch in inputs:
-        #     image_show(images_per_batch)
-        # image_show(inputs)
+    for inputs in data_loader:
+        data, labels = inputs
+        for i in range(5):
+            print(f'{labels = }')
+            for images_per_batch in data:
+                image_show(images_per_batch)
+            data, labels = data_loader.dataset.shuffle(data, labels)
