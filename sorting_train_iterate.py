@@ -168,21 +168,22 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
         # 演算開始. start calculate.
+        outputs, loss = (None, None)
         for j in range(repetition_len):
             outputs, loss = calc_func(inputs, labels)
 
-            # 後処理
-            predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
-            # predicted = torch.max(outputs, 2)[1]  # batch_first = True
-            per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
-            full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
-            epoch_per_fit_accuracy += per_fit_accuracy
-            epoch_full_fit_accuracy += full_fit_accuracy
-            epoch_loss += loss
-            print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], j = [{j}/{repetition_len - 1}], ' +
-                  f'{loss = }, {full_fit_accuracy = }, {per_fit_accuracy=}')
             inputs, labels = data_loader.dataset.shuffle(inputs, labels)
             labels = labels.to(device, non_blocking=True)
+        # 後処理
+        predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
+        # predicted = torch.max(outputs, 2)[1]  # batch_first = True
+        per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
+        full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
+        epoch_per_fit_accuracy += per_fit_accuracy
+        epoch_full_fit_accuracy += full_fit_accuracy
+        epoch_loss += loss
+        print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], ' +
+              f'{loss = }, {full_fit_accuracy = }, {per_fit_accuracy=}')
 
     loss_avg = epoch_loss / iterate_len
     full_fit_accuracy_avg = epoch_full_fit_accuracy / iterate_len
