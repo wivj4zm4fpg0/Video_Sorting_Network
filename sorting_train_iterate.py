@@ -154,7 +154,8 @@ def test(inputs, labels):
 
 
 # 推論を行う
-def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, log_file: str, iterate_len: int):
+def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, log_file: str, iterate_len: int,
+             subset_repetition_len: int):
     epoch_loss = 0
     epoch_full_fit_accuracy = 0
     epoch_per_fit_accuracy = 0
@@ -169,7 +170,7 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
 
         # 演算開始. start calculate.
         outputs, loss = (None, None)
-        for j in range(repetition_len):
+        for j in range(subset_repetition_len):
             outputs, loss = calc_func(inputs, labels)
 
             inputs, labels = data_loader.dataset.shuffle(inputs, labels)
@@ -203,9 +204,9 @@ try:
         current_epoch = epoch
         Net.train()
         # estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x))
-        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
+        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, repetition_len)
         Net.eval()
-        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
+        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len, 1)
 except KeyboardInterrupt:  # Ctrl-Cで保存．
     if args.model_save_path:
         torch.save({
