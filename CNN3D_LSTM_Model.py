@@ -67,7 +67,7 @@ class CNN3D_LSTM(nn.Module):
         return self.forward_method(x)
 
     def classification_forward(self, x: torch.Tensor) -> torch.Tensor:
-        sequence_length = x.shape[1]
+        sequence_length = x.size()[1]
         # (batch_size, seq_len, frames, channel, colPixel, rowPixel)
         # -> (seq_len, batch_size, channel, frames, colPixel, rowPixel)
         x = x.permute(1, 0, 3, 2, 4, 5)
@@ -78,7 +78,7 @@ class CNN3D_LSTM(nn.Module):
         return x
 
     def sorting_forward(self, x: torch.Tensor) -> torch.Tensor:
-        batch_size = x.shape[0]
+        batch_size = x.size()[0]
         # シーケンスでバッチ処理をする
         x = torch.stack([torch.flatten(self.resnet18_3d(x[i]), 1) for i in range(batch_size)])
         # output_shape -> (batch_size, seq_len, data_size), lstm.batch_first -> True
