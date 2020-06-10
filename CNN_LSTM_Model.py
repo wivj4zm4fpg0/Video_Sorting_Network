@@ -29,10 +29,13 @@ class CNN_LSTM(nn.Module):
 
         lstm_dim = 512
         if bidirectional:
-            self.lstm = nn.LSTM(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
-                                batch_first=batch_first)
+            # self.lstm = nn.LSTM(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
+            #                     batch_first=batch_first)
+            self.gru = nn.GRU(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
+                              batch_first=batch_first)
         else:
-            self.lstm = nn.LSTM(resnet18_last_dim, lstm_dim, bidirectional=False, num_layers=2, batch_first=batch_first)
+            # self.lstm = nn.LSTM(resnet18_last_dim, lstm_dim, bidirectional=False, num_layers=2, batch_first=batch_first)
+            self.gru = nn.GRU(resnet18_last_dim, lstm_dim, bidirectional=True, num_layers=2, batch_first=batch_first)
 
         self.fc = nn.Linear(lstm_dim, class_num)
         nn.init.kaiming_normal_(self.fc.weight)
@@ -61,7 +64,8 @@ class CNN_LSTM(nn.Module):
         x = x.permute(1, 0, 2, 3, 4)  # (batch_size, seq_len, img) -> (seq_len, batch_size, img)
         x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(sequence_length)])
         # output_shape -> (seq_len, batch_size, data_size), lstm.batch_first -> Flase
-        x = self.lstm(x)[0]
+        # x = self.lstm(x)[0]
+        x = self.gru(x)[0]
         x = self.fc(x)
         return x
 
@@ -70,7 +74,8 @@ class CNN_LSTM(nn.Module):
         # シーケンスでバッチ処理をする
         x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(batch_size)])
         # output_shape -> (batch_size, seq_len, data_size), lstm.batch_first -> True
-        x = self.lstm(x)[0]
+        # x = self.lstm(x)[0]
+        x = self.gru(x)[0]
         x = self.fc(x)
         return x
 
