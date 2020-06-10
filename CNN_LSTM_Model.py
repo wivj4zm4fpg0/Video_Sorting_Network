@@ -28,27 +28,29 @@ class CNN_LSTM(nn.Module):
         resnet18_last_dim = 512
 
         lstm_dim = 512
+        num_layers = 1
         if bidirectional:
             # self.lstm = nn.LSTM(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
             #                     batch_first=batch_first)
-            self.gru = nn.GRU(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=2,
+            self.gru = nn.GRU(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=num_layers,
                               batch_first=batch_first)
         else:
             # self.lstm = nn.LSTM(resnet18_last_dim, lstm_dim, bidirectional=False, num_layers=2, batch_first=batch_first)
-            self.gru = nn.GRU(resnet18_last_dim, lstm_dim, bidirectional=True, num_layers=2, batch_first=batch_first)
+            self.gru = nn.GRU(resnet18_last_dim, lstm_dim, bidirectional=True, num_layers=num_layers,
+                              batch_first=batch_first)
 
         self.fc = nn.Linear(lstm_dim, class_num)
         nn.init.kaiming_normal_(self.fc.weight)
 
     # xの形は(バッチサイズ, RNNへの入力数, チャンネル数, 解像度, 解像度)の5次元配列である必要がある
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-    
+
         # (バッチサイズ x RNNへの入力数, チャンネル数, 解像度, 解像度)の4次元配列に変換する
         # x = x.view(batch_size * sequence_length, x.shape[2], x.shape[3], x.shape[4])
         # x = self.resnet18(x)
         # x = x.view(batch_size, sequence_length, -1)
         # output_shape -> (batch_size, seq_len, data_size)
-    
+
         # resnet18_last_dim = 512
         # fs = torch.zeros(batch_size, sequence_length, resnet18_last_dim).cuda()
         # for i in range(batch_size):
@@ -56,7 +58,7 @@ class CNN_LSTM(nn.Module):
         #     cnn = torch.flatten(cnn, 1)
         #     fs[i, :, :] = cnn
         # x = fs
-    
+
         return self.forward_method(x)
 
     def classification_forward(self, x: torch.Tensor) -> torch.Tensor:
