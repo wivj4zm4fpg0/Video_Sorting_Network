@@ -80,7 +80,7 @@ class CNN_LSTM(nn.Module):
     def sorting_forward(self, x: torch.Tensor) -> torch.Tensor:
         batch_size = x.shape[0]
         # シーケンスでバッチ処理をする
-        x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(batch_size)])
+        # x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(batch_size)])
         x = torch.stack(
             [self.pre_fc2(self.pre_fc1(torch.flatten(self.resnet18(x[i]), 1))) for i in range(batch_size)])
         # output_shape -> (batch_size, seq_len, data_size), lstm.batch_first -> True
