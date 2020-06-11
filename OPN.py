@@ -39,7 +39,7 @@ class OPN(nn.Module):
 
 
 if __name__ == '__main__':
-    model = CNN_LSTM()
+    model = OPN()
     input = torch.randn(2, 4, 3, 256, 256)
     output = model(input)
     print(f'{output.shape=}')
