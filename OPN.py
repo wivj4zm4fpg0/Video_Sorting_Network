@@ -10,7 +10,6 @@ class CNN_LSTM(nn.Module):
         super().__init__()
 
         assert task == 'classification' or task == 'sorting'
-        batch_first = None
         if task == 'classification':
             self.forward_method = self.classification_forward
             # self.forward = self.classification_forward
@@ -81,8 +80,6 @@ class CNN_LSTM(nn.Module):
         batch_size = x.shape[0]
         # シーケンスでバッチ処理をする
         x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(batch_size)])
-        x = torch.stack(
-            [self.pre_fc2(self.pre_fc1(torch.flatten(self.resnet18(x[i]), 1))) for i in range(batch_size)])
         # output_shape -> (batch_size, seq_len, data_size), lstm.batch_first -> True
         # x = self.lstm(x)[0]
         x = self.gru(x)[0]
