@@ -28,14 +28,14 @@ class CNN_LSTM(nn.Module):
         self.resnet18 = nn.Sequential(*resnet18_modules_cut)
         resnet18_last_dim = 512
 
-        self.pre_fc1 = nn.Linear(resnet18_last_dim, 4096)
-        self.pre_fc2 = nn.Linear(4096, 4096)
-        nn.init.kaiming_normal_(self.pre_fc1.weight)
-        nn.init.kaiming_normal_(self.pre_fc2.weight)
+        # self.pre_fc1 = nn.Linear(resnet18_last_dim, 4096)
+        # self.pre_fc2 = nn.Linear(4096, 4096)
+        # nn.init.kaiming_normal_(self.pre_fc1.weight)
+        # nn.init.kaiming_normal_(self.pre_fc2.weight)
+        # resnet18_last_dim = 4096
 
         lstm_dim = 512
         num_layers = 2
-        resnet18_last_dim = 4096
         if bidirectional:
             self.gru = nn.GRU(resnet18_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=num_layers,
                               batch_first=batch_first)
@@ -68,9 +68,9 @@ class CNN_LSTM(nn.Module):
     def classification_forward(self, x: torch.Tensor) -> torch.Tensor:
         sequence_length = x.shape[1]
         x = x.permute(1, 0, 2, 3, 4)  # (batch_size, seq_len, img) -> (seq_len, batch_size, img)
-        # x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(sequence_length)])
-        x = torch.stack(
-            [self.pre_fc2(self.pre_fc1(torch.flatten(self.resnet18(x[i]), 1))) for i in range(sequence_length)])
+        x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(sequence_length)])
+        # x = torch.stack(
+        #     [self.pre_fc2(self.pre_fc1(torch.flatten(self.resnet18(x[i]), 1))) for i in range(sequence_length)])
         # output_shape -> (seq_len, batch_size, data_size), lstm.batch_first -> Flase
         # x = self.lstm(x)[0]
         x = self.gru(x)[0]
@@ -80,9 +80,9 @@ class CNN_LSTM(nn.Module):
     def sorting_forward(self, x: torch.Tensor) -> torch.Tensor:
         batch_size = x.shape[0]
         # シーケンスでバッチ処理をする
-        # x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(batch_size)])
-        x = torch.stack(
-            [self.pre_fc2(self.pre_fc1(torch.flatten(self.resnet18(x[i]), 1))) for i in range(batch_size)])
+        x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(batch_size)])
+        # x = torch.stack(
+        #     [self.pre_fc2(self.pre_fc1(torch.flatten(self.resnet18(x[i]), 1))) for i in range(batch_size)])
         # output_shape -> (batch_size, seq_len, data_size), lstm.batch_first -> True
         # x = self.lstm(x)[0]
         x = self.gru(x)[0]
