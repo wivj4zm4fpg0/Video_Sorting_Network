@@ -15,8 +15,12 @@ class TimeComparison3DCNN(nn.Module):
             resnet18_3d.load_state_dict(checkpoint['state_dict'])
         self.resnet18_3d = resnet18_3d
         resnet18_3d_last_dim = 512
-        self.fc = nn.Linear(resnet18_3d_last_dim * 2, 2)
-        nn.init.kaiming_normal_(self.fc.weight)
+        # self.fc = nn.Linear(resnet18_3d_last_dim * 2, 2)
+        # nn.init.kaiming_normal_(self.fc.weight)
+        self.fc1 = nn.Linear(resnet18_3d_last_dim * 2, 4096)
+        self.fc2 = nn.Linear(4096, 2)
+        nn.init.kaiming_normal_(self.fc1.weight)
+        nn.init.kaiming_normal_(self.fc2.weight)
 
     # xの形は(バッチサイズ, RNNへの入力数, チャンネル数, 解像度, 解像度)の5次元配列である必要がある
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -26,7 +30,9 @@ class TimeComparison3DCNN(nn.Module):
         x1 = x[:, seq_half:seq_len]
         x0 = torch.flatten(self.resnet18_3d(x0.permute(0, 2, 1, 3, 4)), 1)
         x1 = torch.flatten(self.resnet18_3d(x1.permute(0, 2, 1, 3, 4)), 1)
-        x = self.fc(torch.cat([x0, x1], 1))
+        # x = self.fc(torch.cat([x0, x1], 1))
+        x = self.fc1(torch.cat([x0, x1], 1))
+        x = self.fc2(x)
         return x
 
 
