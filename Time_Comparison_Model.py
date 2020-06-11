@@ -26,13 +26,20 @@ class TimeComparison(nn.Module):
             self.lstm_forward = self.normal_forward
             self.lstm = nn.LSTM(resnet18_last_dim, lstm_dim, bidirectional=False, num_layers=2, batch_first=batch_first)
 
-        self.fc = nn.Linear(lstm_dim * 2, 2)
-        nn.init.kaiming_normal_(self.fc.weight)
+        # self.fc = nn.Linear(lstm_dim * 2, 2)
+        # nn.init.kaiming_normal_(self.fc.weight)
+
+        self.fc1 = nn.Linear(lstm_dim * 2, 4096)
+        self.fc2 = nn.Linear(4096, 2)
+        nn.init.kaiming_normal_(self.fc1.weight)
+        nn.init.kaiming_normal_(self.fc2.weight)
 
     # xの形は(バッチサイズ, RNNへの入力数, チャンネル数, 解像度, 解像度)の5次元配列である必要がある
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.lstm_forward(x)
-        x = self.fc(x)
+        # x = self.fc(x)
+        x = self.fc1(x)
+        x = self.fc2(x)
         return x
 
     def bidirectional_forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -66,5 +73,4 @@ if __name__ == '__main__':
     model = TimeComparison(bidirectional=False)
     input = torch.randn(2, 4, 3, 90, 90)
     output = model(input)
-    print(f'{output[0].shape=}')
-    print(f'{output[1].shape=}')
+    print(f'{output.shape=}')
