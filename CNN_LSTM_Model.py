@@ -75,7 +75,7 @@ class CNN_LSTM(nn.Module):
     def classification_forward(self, x: torch.Tensor) -> torch.Tensor:
         sequence_length = x.shape[1]
         x = x.permute(1, 0, 2, 3, 4)  # (batch_size, seq_len, img) -> (seq_len, batch_size, img)
-        x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(sequence_length)])
+        x = torch.stack([torch.flatten(self.cnn(x[i]), 1) for i in range(sequence_length)])
         # x = torch.stack(
         #     [self.pre_relu2(self.pre_fc2(self.pre_relu1(self.pre_fc1(torch.flatten(self.cnn(x[i]), 1))))) for i in
         #      range(sequence_length)])
