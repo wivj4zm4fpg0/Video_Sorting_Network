@@ -7,8 +7,8 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from CNN3D_LSTM_Model import CNN3D_LSTM
-from video_sort_3dcnn_comparison_train_loader import VideoSort3DCNNComparisonTrainDataSet
+from Siamese_CNN3D_Model import SiameseCNN3D
+from video_siamese_cnn3d_train_loader import VideoSiamese3DCNNTrainDataSet
 from video_test_loader import ucf101_test_path_load
 from video_train_loader import ucf101_train_path_load
 
@@ -19,14 +19,12 @@ parser.add_argument('--output_dir', type=str, required=True)
 parser.add_argument('--train_label_path', type=str, required=True)
 parser.add_argument('--test_label_path', type=str, required=True)
 parser.add_argument('--class_path', type=str, required=True)
-parser.add_argument('--class_num', type=int, default=2, required=False)
-parser.add_argument('--cnn3d_frame_num', type=int, default=16, required=False)
+parser.add_argument('--search_frame_num', type=int, default=64, required=False)
+parser.add_argument('--ref_frame_num', type=int, default=16, required=False)
 parser.add_argument('--epoch_num', type=int, default=100, required=False)
 parser.add_argument('--batch_size', type=int, default=4, required=False)
-parser.add_argument('--frame_num', type=int, default=4, required=False)
 parser.add_argument('--use_cuda', action='store_true')
 parser.add_argument('--use_pretrained_model', action='store_true')
-parser.add_argument('--use_bidirectional', action='store_true')
 parser.add_argument('--learning_rate', type=float, default=0.01, required=False)
 parser.add_argument('--model_save_path', type=str, required=False)
 parser.add_argument('--model_load_path', type=str, required=False)
@@ -35,9 +33,8 @@ parser.add_argument('--load_epoch_num', action='store_true')
 
 args = parser.parse_args()
 batch_size = args.batch_size
-frame_num = args.frame_num
-class_num = args.class_num
-cnn3d_frame_num = args.cnn3d_frame_num
+search_frame_num = args.search_frame_num
+ref_frame_num = args.ref_frame_num
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
 log_test_path = os.path.join(args.output_dir, 'log_test.csv')
 os.makedirs(args.output_dir, exist_ok=True)
@@ -46,19 +43,17 @@ json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w')
 
 # データセットを読み込む
 train_loader = DataLoader(
-    VideoSort3DCNNComparisonTrainDataSet(
-        frame_num=frame_num,
+    VideoSiamese3DCNNTrainDataSet(
         path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
-        class_num=class_num,
-        cnn3d_frame_num=cnn3d_frame_num
+        search_frame_num=search_frame_num,
+        ref_frame_num=ref_frame_num
     ),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
-    VideoSort3DCNNComparisonTrainDataSet(
-        frame_num=frame_num,
+    VideoSiamese3DCNNTrainDataSet(
         path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
-        class_num=class_num,
-        cnn3d_frame_num=cnn3d_frame_num
+        search_frame_num=search_frame_num,
+        ref_frame_num=ref_frame_num
     ),
     batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)
@@ -66,8 +61,7 @@ test_iterate_len = len(test_loader)
 
 # 初期設定
 # resnet18を取得
-Net = CNN3D_LSTM(args.class_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional,
-                   task='classification')
+Net = SiameseCNN3D()
 criterion = nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
@@ -95,31 +89,23 @@ if args.model_load_path:
         current_epoch = checkpoint['epoch']
     print('complete load model')
 
-# 双方向の有無で出力の取り方を変える
-if args.use_bidirectional:
-    # reshape_output = lambda x: mean(x, 1)  # シーケンスの平均を取る (batch_size, seq_len, class_num)
-    reshape_output = lambda x: torch.mean(x, 0)  # シーケンスの平均を取る (seq_len, batch_size, class_num)
-else:
-    # reshape_output = lambda x: x[:, -1, :]  # シーケンスの最後を取る (batch_size, seq_len, class_num)
-    reshape_output = lambda x: x[-1, :, :]  # シーケンスの最後を取る (seq_len, batch_size, class_num)
-
 
 # 訓練を行う
-def train(inputs, labels):
+def train(search_videos, ref_videos, labels):
     # 演算開始. start calculate.
-    outputs = Net(inputs)  # この記述方法で順伝搬が行われる
+    outputs = Net(search_videos, ref_videos)  # この記述方法で順伝搬が行われる
     optimizer.zero_grad()  # 勾配を初期化
-    loss = criterion(reshape_output(outputs), labels)  # Loss値を計算
+    loss = criterion(outputs, labels)  # Loss値を計算
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
     return outputs, loss.item()
 
 
 # テストを行う
-def test(inputs, labels):
+def test(search_videos, ref_videos, labels):
     with torch.no_grad():  # 勾配計算が行われないようにする
-        outputs = Net(inputs)  # この記述方法で順伝搬が行われる
-        loss = criterion(reshape_output(outputs), labels)  # Loss値を計算
+        outputs = Net(search_videos, ref_videos)  # この記述方法で順伝搬が行われる
+        loss = criterion(outputs, labels)  # Loss値を計算
     return outputs, loss.item()
 
 
@@ -131,15 +117,15 @@ def estimate(data_loader, calc_func, subset: str, epoch_num: int, log_file: str,
 
     for i, data in enumerate(data_loader):
         # 前処理
-        inputs, labels = data
+        search_videos, ref_videos, labels = data
         labels = labels.to(device, non_blocking=True)
 
         # 演算開始. start calculate.
-        outputs, loss = calc_func(inputs, labels)
+        outputs, loss = calc_func(search_videos, ref_videos, labels)
 
         # 後処理
-        predicted = torch.max(reshape_output(outputs), 1)[1]
-        accuracy = (predicted == labels).sum().item() / len(inputs)
+        predicted = torch.max(outputs, 1)[1]
+        accuracy = (predicted == labels).sum().item() / len(search_videos)
         epoch_accuracy += accuracy
         epoch_loss += loss
         print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, {accuracy = }')
