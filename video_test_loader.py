@@ -27,10 +27,11 @@ def ucf101_test_path_load(video_path: str, label_path: str, class_path: str) -> 
 
 class VideoTestDataSet(Dataset):  # torch.utils.data.Datasetを継承
 
-    def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_load: list = None,
-                 center_crop_size: int = 224):
+    def __init__(self, pre_processing: transforms.Compose = None, frame_num=4, path_load: list = None,
+                 center_crop_size=224, frame_interval=0):
 
-        self.frame_num = int(frame_num / 2)
+        self.frame_num = int(frame_num * (frame_interval + 1) / 2)
+        self.frame_interval = frame_interval
         self.data_list = path_load
 
         if pre_processing:
@@ -47,7 +48,8 @@ class VideoTestDataSet(Dataset):  # torch.utils.data.Datasetを継承
         #  真ん中のフレームを抽出する
         frame_list = os.listdir(self.data_list[index][0])
         video_medium_len = int(len(frame_list) / 2)
-        frame_indices = list(range(video_medium_len - self.frame_num, video_medium_len + self.frame_num))
+        frame_indices = \
+            list(range(video_medium_len - self.frame_num, video_medium_len + self.frame_num, self.frame_interval + 1))
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
         video_tensor = [pre_processing(os.path.join(self.data_list[index][0], frame_list[i])) for i in frame_indices]
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
@@ -61,18 +63,20 @@ class VideoTestDataSet(Dataset):  # torch.utils.data.Datasetを継承
 if __name__ == '__main__':  # UCF101データセットの読み込みテストを行う
 
     import argparse
+    from video_sort_train_loader import recursive_video_path_load
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ucf101_dataset_path', type=str, required=True)
-    parser.add_argument('--ucf101_label_path', type=str, default='testlist01.txt', required=False)
-    parser.add_argument('--ucf101_class_path', type=str, default='classInd.txt', required=False)
+    parser.add_argument('--dataset_path', type=str, required=True)
     parser.add_argument('--batch_size', type=int, default=1, required=False)
 
     args = parser.parse_args()
 
     data_loader = DataLoader(
         VideoTestDataSet(
-            path_load=ucf101_test_path_load(args.ucf101_dataset_path, args.ucf101_label_path, args.ucf101_class_path)),
+            path_load=recursive_video_path_load(args.dataset_path, depth=1),
+            frame_num=4,
+            frame_interval=3
+        ),
         batch_size=args.batch_size, shuffle=True
     )
 

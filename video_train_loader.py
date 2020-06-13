@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import torch
 from PIL import Image
+from natsort import natsorted
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from torchvision.utils import make_grid
@@ -25,11 +26,12 @@ def ucf101_train_path_load(video_path: str, label_path: str) -> list:
 
 class VideoTrainDataSet(Dataset):  # torch.utils.data.Datasetを継承
 
-    def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_load: list = None,
-                 random_crop_size: int = 224):
+    def __init__(self, pre_processing: transforms.Compose = None, frame_num=4, path_load: list = None,
+                 random_crop_size=224, frame_interval=0):
 
-        self.frame_num = frame_num
+        self.frame_num = frame_num * (frame_interval + 1)
         self.data_list = path_load
+        self.frame_interval = frame_interval
 
         if pre_processing:
             self.pre_processing = pre_processing
@@ -44,11 +46,13 @@ class VideoTrainDataSet(Dataset):  # torch.utils.data.Datasetを継承
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
-        frame_list = [os.path.join(self.data_list[index][0], frame) for frame in os.listdir(self.data_list[index][0])]
+        frame_list = \
+            [os.path.join(self.data_list[index][0], frame) for frame in natsorted(os.listdir(self.data_list[index][0]))]
+        frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
         video_len = len(frame_list)
         # {frame_index + 0, frame_index + 1, ..., frame_index + self.frame_num - 1}番号のフレームを取得するのに使う
         frame_index = randint(0, video_len - self.frame_num - 1)
-        frame_indices = range(frame_index, frame_index + self.frame_num)
+        frame_indices = range(frame_index, frame_index + self.frame_num, self.frame_interval + 1)
 
         # self.pre_processing.transforms[0].set_degree()  # RandomRotationの回転角度を設定
         # RandomCropの設定を行う. 引数に画像サイズが必要なので最初のフレームを渡す
@@ -70,17 +74,22 @@ class VideoTrainDataSet(Dataset):  # torch.utils.data.Datasetを継承
 if __name__ == '__main__':  # UCF101データセットの読み込みテストを行う
 
     import argparse
+    from video_sort_train_loader import recursive_video_path_load
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ucf101_dataset_path', type=str, required=True)
-    parser.add_argument('--ucf101_label_path', type=str, required=True)
+    parser.add_argument('--dataset_path', type=str, required=True)
     parser.add_argument('--batch_size', type=int, default=8, required=False)
+    parser.add_argument('--frame_interval', type=int, default=0, required=False)
 
     args = parser.parse_args()
 
     data_loader = DataLoader(
-        VideoTrainDataSet(path_load=ucf101_train_path_load(args.ucf101_dataset_path, args.ucf101_label_path)),
-        batch_size=args.batch_size, shuffle=True
+        VideoTrainDataSet(
+            path_load=recursive_video_path_load(args.dataset_path, depth=1),
+            random_crop_size=180,
+            frame_interval=args.frame_interval
+        ),
+        batch_size=args.batch_size, shuffle=False
     )
 
 

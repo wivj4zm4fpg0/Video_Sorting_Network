@@ -22,6 +22,7 @@ parser.add_argument('--class_num', type=int, default=101, required=False)
 parser.add_argument('--epoch_num', type=int, default=100, required=False)
 parser.add_argument('--batch_size', type=int, default=4, required=False)
 parser.add_argument('--frame_num', type=int, default=4, required=False)
+parser.add_argument('--frame_interval', type=int, default=0, required=False)
 parser.add_argument('--use_cuda', action='store_true')
 parser.add_argument('--use_pretrained_model', action='store_true')
 parser.add_argument('--use_bidirectional', action='store_true')
@@ -34,6 +35,7 @@ parser.add_argument('--load_epoch_num', action='store_true')
 args = parser.parse_args()
 batch_size = args.batch_size
 frame_num = args.frame_num
+frame_interval = args.frame_interval
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
 log_test_path = os.path.join(args.output_dir, 'log_test.csv')
 os.makedirs(args.output_dir, exist_ok=True)
@@ -42,12 +44,19 @@ json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w')
 
 # データセットを読み込む
 train_loader = DataLoader(
-    VideoTrainDataSet(frame_num=frame_num, path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path)),
-    batch_size=batch_size, shuffle=True)
+    VideoTrainDataSet(
+        frame_num=frame_num,
+        path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
+        frame_interval=frame_interval
+    ),
+    batch_size=batch_size,
+    shuffle=True)
 test_loader = DataLoader(
     VideoTestDataSet(
         frame_num=frame_num,
-        path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path)),
+        path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
+        frame_interval=frame_interval
+    ),
     batch_size=batch_size,
     shuffle=False)
 train_iterate_len = len(train_loader)
@@ -127,7 +136,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
 
         # 後処理
         predicted = torch.max(reshape_output(outputs), 1)[1]
-        accuracy = (predicted == labels).sum().item() / batch_size
+        accuracy = (predicted == labels).sum().item() / len(inputs)
         epoch_accuracy += accuracy
         epoch_loss += loss
         print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, {accuracy = }')
