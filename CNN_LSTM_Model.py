@@ -1,8 +1,8 @@
 import torch
 from torch import nn
-# from torchvision.models import resnet18
-# from torchvision.models.resnet import BasicBlock
-from torchvision.models.alexnet import alexnet
+from torchvision.models import resnet18
+from torchvision.models.resnet import BasicBlock
+# from torchvision.models.alexnet import alexnet
 
 
 class CNN_LSTM(nn.Module):
@@ -21,17 +21,17 @@ class CNN_LSTM(nn.Module):
             # self.forward = self.sorting_forward
             batch_first = True
 
-        # resnet18_modules = [module for module in (resnet18(pretrained=pretrained).modules())][1:-1]
-        # resnet18_modules_cut = resnet18_modules[0:4]
-        # resnet18_modules_cut.extend(
-        #     [module for module in resnet18_modules if type(module) == nn.Sequential and type(module[0]) == BasicBlock])
-        # resnet18_modules_cut.append(resnet18_modules[-1])
-        # self.cnn = nn.Sequential(*resnet18_modules_cut)
-        # cnn_last_dim = 512
+        resnet18_modules = [module for module in (resnet18(pretrained=pretrained).modules())][1:-1]
+        resnet18_modules_cut = resnet18_modules[0:4]
+        resnet18_modules_cut.extend(
+            [module for module in resnet18_modules if type(module) == nn.Sequential and type(module[0]) == BasicBlock])
+        resnet18_modules_cut.append(resnet18_modules[-1])
+        self.cnn = nn.Sequential(*resnet18_modules_cut)
+        cnn_last_dim = 512
 
-        alex_model = alexnet(pretrained=pretrained)
-        self.cnn = nn.Sequential(*alex_model.features, alex_model.avgpool)
-        cnn_last_dim = 9216
+        # alex_model = alexnet(pretrained=pretrained)
+        # self.cnn = nn.Sequential(*alex_model.features, alex_model.avgpool)
+        # cnn_last_dim = 9216
 
         # self.pre_fc1 = nn.Linear(cnn_last_dim, 4096)
         # self.pre_relu1 = nn.ReLU(inplace=True)
@@ -44,9 +44,13 @@ class CNN_LSTM(nn.Module):
         lstm_dim = 512
         num_layers = 2
         if bidirectional:
+            # self.lstm = nn.LSTM(cnn_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=num_layers,
+            #                   batch_first=batch_first)
             self.gru = nn.GRU(cnn_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=num_layers,
                               batch_first=batch_first)
         else:
+            # self.lstm = nn.LSTM(cnn_last_dim, lstm_dim, bidirectional=True, num_layers=num_layers,
+            #                   batch_first=batch_first)
             self.gru = nn.GRU(cnn_last_dim, lstm_dim, bidirectional=True, num_layers=num_layers,
                               batch_first=batch_first)
 
