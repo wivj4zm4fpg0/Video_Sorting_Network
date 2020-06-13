@@ -16,6 +16,7 @@ class SiameseCNN3D(nn.Module):
         resnet18_3d.siamese_cnn3d_init()
 
         self.resnet18_3d = resnet18_3d
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, search_videos: torch.Tensor, ref_videos: torch.Tensor) -> torch.Tensor:
         search_feat = self.resnet18_3d(search_videos.permute(0, 2, 1, 3, 4))
@@ -23,6 +24,7 @@ class SiameseCNN3D(nn.Module):
         b, c, t, h, w = search_feat.size()
         match_out = F.conv3d(search_feat.view(-1, b * c, t, h, w), ref_feat, groups=b)
         match_out = match_out.view(b, -1)
+        match_out = self.softmax(match_out)
 
         return match_out
 
@@ -33,3 +35,4 @@ if __name__ == '__main__':
     ref_input = torch.randn(2, 16, 3, 70, 70)
     output = model(search_input, ref_input)
     print(f'{output.shape=}')
+    print(f'{output = }')
