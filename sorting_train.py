@@ -4,6 +4,7 @@ import os
 from time import time
 
 import torch
+from torch import nn
 from torch.utils.data import DataLoader
 
 from CNN_LSTM_Model import CNN_LSTM
@@ -87,7 +88,9 @@ else:
 # モデルの読み込み
 if args.model_load_path:
     checkpoint = torch.load(args.model_load_path)
+    Net.fc = nn.Linear(512, 101)
     Net.load_state_dict(checkpoint['model_state_dict'])
+    Net.fc = nn.Linear(512, frame_num)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     optimizer.lr = args.learning_rate
     if args.load_epoch_num:
