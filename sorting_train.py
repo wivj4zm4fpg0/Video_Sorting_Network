@@ -66,6 +66,7 @@ test_iterate_len = len(test_loader)
 # resnet18を取得
 Net = CNN_LSTM(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional,
                task='classification')
+Net.fc = nn.Linear(512, 101)
 criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
@@ -88,9 +89,9 @@ else:
 # モデルの読み込み
 if args.model_load_path:
     checkpoint = torch.load(args.model_load_path)
-    Net.fc = nn.Linear(512, 101)
     Net.load_state_dict(checkpoint['model_state_dict'])
     Net.fc = nn.Linear(512, frame_num)
+    Net = torch.nn.DataParallel(Net.cuda())
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     optimizer.lr = args.learning_rate
     if args.load_epoch_num:
