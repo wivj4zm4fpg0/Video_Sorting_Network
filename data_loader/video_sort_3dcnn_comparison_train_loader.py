@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.utils import make_grid
 
-from video_train_loader import VideoTrainDataSet
+from data_loader.video_train_loader import VideoTrainDataSet
 
 
 def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):

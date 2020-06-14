@@ -8,9 +8,9 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 from CNN_LSTM_Combination_Model import CNNLSTMCombination
-from video_sorting_classification_train_loader import VideoSortingClassificationTrainDataSet
-from video_test_loader import ucf101_test_path_load
-from video_train_loader import ucf101_train_path_load
+from data_loader.video_sorting_classification_train_loader import VideoSortingClassificationTrainDataSet
+from data_loader.video_test_loader import ucf101_test_path_load
+from data_loader.video_train_loader import ucf101_train_path_load
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()

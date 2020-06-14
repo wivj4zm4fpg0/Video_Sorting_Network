@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.utils import make_grid
 
-from video_train_loader import VideoTrainDataSet
+from data_loader.video_train_loader import VideoTrainDataSet
 
 
 def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):
@@ -50,7 +50,7 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
 
         shuffle_list = list(range(self.frame_num))
         shuffle_list = random.sample(shuffle_list, self.frame_num)
-        shuffle_frame_indices = [0] * self.frame_num
+        shuffle_frame_indices = list(range(self.frame_num))
         for i, shuffle_value in enumerate(shuffle_list):
             shuffle_frame_indices[i] = frame_indices[shuffle_value]
         shuffle_frame_indices = torch.tensor(shuffle_frame_indices)
@@ -66,11 +66,9 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
         # リスト内包表記で検索
 
         # video_tensor = [pre_processing(frame_list[i]) for i in frame_indices]
-        video_tensor = [pre_processing(frame_list[i]) for i in shuffle_frame_indices[:, 0]]
-
+        video_tensor = [pre_processing(frame_list[int(i)]) for i in shuffle_frame_indices[:, 0]]
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
 
-        # return video_tensor  # 入力画像とそのラベルをタプルとして返す
         return video_tensor, shuffle_frame_indices[:, 1]  # 入力画像とそのラベルをタプルとして返す
 
     def __len__(self) -> int:  # データセットの数を返すようにする
@@ -113,13 +111,14 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     parser.add_argument('--batch_size', type=int, default=3, required=False)
     parser.add_argument('--depth', type=int, default=1, required=False)
     parser.add_argument('--frame_num', type=int, default=4, required=False)
+    parser.add_argument('--interval_frame', type=int, default=1, required=False)
 
     args = parser.parse_args()
 
     data_loader = DataLoader(
         VideoSortTrainDataSet(
             path_load=recursive_video_path_load(args.dataset_path, args.depth),
-            interval_frame=0,
+            interval_frame=args.interval_frame,
             random_crop_size=180
         ),
         batch_size=args.batch_size, shuffle=False
@@ -134,10 +133,8 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
             exit(0)
 
 
-    for inputs in data_loader:
-        data, labels = inputs
-        for i in range(5):
-            print(f'{labels = }')
-            for images_per_batch in data:
-                image_show(images_per_batch)
-            data, labels = data_loader.dataset.shuffle(data, labels)
+    for data in data_loader:
+        inputs, labels = data
+        print(f'{labels = }')
+        for images_per_batch in inputs:
+            image_show(images_per_batch)

@@ -6,10 +6,10 @@ from time import time
 import torch
 from torch.utils.data import DataLoader
 
-from CNN3D_LSTM_Model import SiameseCNN3D
-from video_sort_3dcnn_train_loader import VideoSort3DCNNTrainDataSet
-from video_test_loader import ucf101_test_path_load
-from video_train_loader import ucf101_train_path_load
+from models.CNN3D_LSTM_Model import SiameseCNN3D
+from data_loader.video_sort_3dcnn_train_loader import VideoSort3DCNNTrainDataSet
+from data_loader.video_test_loader import ucf101_test_path_load
+from data_loader.video_train_loader import ucf101_train_path_load
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()

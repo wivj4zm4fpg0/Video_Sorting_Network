@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from siamese_resnet_3d import generate_model
+from models.siamese_resnet_3d import generate_model
 
 
 class SiameseCNN3D(nn.Module):

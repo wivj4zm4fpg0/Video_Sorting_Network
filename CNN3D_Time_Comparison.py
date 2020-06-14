@@ -7,10 +7,10 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from Time_Comparison_3DCNN_Model import TimeComparison3DCNN
-from video_test_loader import ucf101_test_path_load
-from video_time_comparison_loader import VideoTimeComparisonDataSet
-from video_train_loader import ucf101_train_path_load
+from models.Time_Comparison_3DCNN_Model import TimeComparison3DCNN
+from data_loader.video_test_loader import ucf101_test_path_load
+from data_loader.video_time_comparison_loader import VideoTimeComparisonDataSet
+from data_loader.video_train_loader import ucf101_train_path_load
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()

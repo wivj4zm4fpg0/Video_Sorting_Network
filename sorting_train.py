@@ -4,36 +4,34 @@ import os
 from time import time
 
 import torch
-from torch import nn
 from torch.utils.data import DataLoader
 
-from CNN_LSTM_Model import CNN_LSTM
-from video_sort_train_loader import VideoSortTrainDataSet
-from video_sort_test_loader import VideoSortTestDataSet
-from video_test_loader import ucf101_test_path_load
-from video_train_loader import ucf101_train_path_load
+from data_loader.video_sort_train_loader import VideoSortTrainDataSet
+from data_loader.video_test_loader import ucf101_test_path_load
+from data_loader.video_train_loader import ucf101_train_path_load
+from models.CNN_LSTM_Model import CNN_LSTM
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_path', type=str, required=True)
+parser.add_argument('--train_label_path', type=str, required=True)
+parser.add_argument('--test_label_path', type=str, required=True)
+parser.add_argument('--class_path', type=str, required=True)
 parser.add_argument('--output_dir', type=str, required=True)
 parser.add_argument('--epoch_num', type=int, default=100, required=False)
 parser.add_argument('--batch_size', type=int, default=4, required=False)
 parser.add_argument('--frame_num', type=int, default=4, required=False)
+parser.add_argument('--interval_frames', type=int, default=1, required=False)
 parser.add_argument('--use_cuda', action='store_true')
 parser.add_argument('--use_pretrained_model', action='store_true')
 parser.add_argument('--use_bidirectional', action='store_true')
-parser.add_argument('--learning_rate', type=float, default=0.01, required=False)
+parser.add_argument('--learning_rate', type=float, default=0.001, required=False)
 parser.add_argument('--model_save_path', type=str, required=False)
 parser.add_argument('--model_load_path', type=str, required=False)
-# parser.add_argument('--depth', type=int, default=2, required=False)
-parser.add_argument('--model_save_interval', type=int, default=50, required=False)
-parser.add_argument('--train_label_path', type=str, required=True)
-parser.add_argument('--test_label_path', type=str, required=True)
-parser.add_argument('--class_path', type=str, required=True)
+# parser.add_argument('--model_save_interval', type=int, default=50, required=False)
 parser.add_argument('--no_reset_log_file', action='store_true')
 parser.add_argument('--load_epoch_num', action='store_true')
-parser.add_argument('--interval_frames', type=int, default=4, required=False)
+# parser.add_argument('--depth', type=int, default=2, required=False)
 
 args = parser.parse_args()
 batch_size = args.batch_size
@@ -54,7 +52,7 @@ train_loader = DataLoader(
         interval_frame=args.interval_frames),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
-    VideoSortTestDataSet(
+    VideoSortTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
         interval_frame=args.interval_frames),
@@ -64,9 +62,7 @@ test_iterate_len = len(test_loader)
 
 # 初期設定
 # resnet18を取得
-Net = CNN_LSTM(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional,
-               task='classification')
-Net.fc = nn.Linear(512, 101)
+Net = CNN_LSTM(frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
 criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
@@ -90,8 +86,6 @@ else:
 if args.model_load_path:
     checkpoint = torch.load(args.model_load_path)
     Net.load_state_dict(checkpoint['model_state_dict'])
-    Net.fc = nn.Linear(512, frame_num)
-    Net = torch.nn.DataParallel(Net.cuda())
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     optimizer.lr = args.learning_rate
     if args.load_epoch_num:
@@ -120,7 +114,7 @@ def inner_product_loss(outputs: torch.Tensor) -> torch.Tensor:
 
 # VideoDataTrainDataSetの出力はフレームのみ．ラベルの取得はtrain_loader.dataset.shuffle_listを呼び出すこと
 # 訓練を行う
-def train(inputs):
+def train(inputs, labels):
     # 演算開始. start calculate.
     # train_loader.dataset.update_shuffle_list()
     """
@@ -130,10 +124,9 @@ def train(inputs):
     """
     # labels = torch.tensor(train_loader.dataset.shuffle_list)
     # labels = labels.expand(inputs.size()[0], frame_num)
-    labels = inputs[1]
     labels = labels.to(device, non_blocking=True)
     # outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
-    outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
+    outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
     # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
     loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
@@ -146,12 +139,11 @@ def train(inputs):
 
 # VideoDataTestDataSetの出力は(フレーム，ラベル)である．
 # テストを行う
-def test(inputs):
+def test(inputs, labels):
     with torch.no_grad():  # 勾配計算が行われないようにする
         # labels = torch.tensor(inputs[1])
-        labels = inputs[1]
         labels = labels.to(device, non_blocking=True)
-        outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる
+        outputs = Net(inputs)  # この記述方法で順伝搬が行われる
         # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
         loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
         # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
@@ -160,8 +152,7 @@ def test(inputs):
 
 
 # 推論を行う
-def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, log_file: str, iterate_len: int,
-             get_batch_size_func):
+def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, log_file: str, iterate_len: int):
     epoch_loss = 0
     epoch_full_fit_accuracy = 0
     epoch_per_fit_accuracy = 0
@@ -169,12 +160,12 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
 
     for i, data in enumerate(data_loader):
         # 前処理
-        inputs = data
-        temp_batch_size = get_batch_size_func(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
+        inputs, labels = data
+        temp_batch_size = len(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
         # 演算開始. start calculate.
-        outputs, loss, labels = calc_func(inputs)
+        outputs, loss, labels = calc_func(inputs, labels)
 
         # 後処理
         predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
@@ -204,10 +195,9 @@ try:
     for epoch in range(current_epoch, args.epoch_num):
         current_epoch = epoch
         Net.train()
-        # estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x))
-        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x[0]))
+        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
         Net.eval()
-        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len, lambda x: len(x[0]))
+        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
 except KeyboardInterrupt:  # Ctrl-Cで保存．
     if args.model_save_path:
         torch.save({

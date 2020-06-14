@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from resnet_3d import generate_model
+from models.resnet_3d import generate_model
 
 
 class CNN3D_LSTM(nn.Module):

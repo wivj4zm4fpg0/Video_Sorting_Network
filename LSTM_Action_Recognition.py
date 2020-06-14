@@ -7,9 +7,9 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from CNN_LSTM_Model import CNN_LSTM
-from video_test_loader import VideoTestDataSet, ucf101_test_path_load
-from video_train_loader import VideoTrainDataSet, ucf101_train_path_load
+from models.CNN_LSTM_Model import CNN_LSTM
+from data_loader.video_test_loader import VideoTestDataSet, ucf101_test_path_load
+from data_loader.video_train_loader import VideoTrainDataSet, ucf101_train_path_load
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()

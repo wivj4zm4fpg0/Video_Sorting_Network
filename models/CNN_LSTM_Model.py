@@ -44,15 +44,15 @@ class CNN_LSTM(nn.Module):
         lstm_dim = 512
         num_layers = 2
         if bidirectional:
-            # self.lstm = nn.LSTM(cnn_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=num_layers,
-            #                   batch_first=batch_first)
-            self.gru = nn.GRU(cnn_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=num_layers,
+            self.lstm = nn.LSTM(cnn_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=num_layers,
                               batch_first=batch_first)
+            # self.gru = nn.GRU(cnn_last_dim, int(lstm_dim / 2), bidirectional=True, num_layers=num_layers,
+            #                   batch_first=batch_first)
         else:
-            # self.lstm = nn.LSTM(cnn_last_dim, lstm_dim, bidirectional=True, num_layers=num_layers,
-            #                   batch_first=batch_first)
-            self.gru = nn.GRU(cnn_last_dim, lstm_dim, bidirectional=True, num_layers=num_layers,
+            self.lstm = nn.LSTM(cnn_last_dim, lstm_dim, bidirectional=True, num_layers=num_layers,
                               batch_first=batch_first)
+            # self.gru = nn.GRU(cnn_last_dim, lstm_dim, bidirectional=True, num_layers=num_layers,
+            #                   batch_first=batch_first)
 
         self.fc = nn.Linear(lstm_dim, class_num)
         nn.init.kaiming_normal_(self.fc.weight)
@@ -86,8 +86,8 @@ class CNN_LSTM(nn.Module):
         # x = torch.stack(
         #     [self.pre_fc2(self.pre_fc1(torch.flatten(self.resnet18(x[i]), 1))) for i in range(sequence_length)])
         # output_shape -> (seq_len, batch_size, data_size), lstm.batch_first -> Flase
-        # x = self.lstm(x)[0]
-        x = self.gru(x)[0]
+        x = self.lstm(x)[0]
+        # x = self.gru(x)[0]
         x = self.fc(x)
         return x
 

@@ -7,10 +7,10 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from Siamese_CNN3D_Model import SiameseCNN3D
-from video_siamese_cnn3d_train_loader import VideoSiamese3DCNNTrainDataSet
-from video_test_loader import ucf101_test_path_load
-from video_train_loader import ucf101_train_path_load
+from models.Siamese_CNN3D_Model import SiameseCNN3D
+from data_loader.video_siamese_cnn3d_train_loader import VideoSiamese3DCNNTrainDataSet
+from data_loader.video_test_loader import ucf101_test_path_load
+from data_loader.video_train_loader import ucf101_train_path_load
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()
