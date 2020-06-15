@@ -2,7 +2,7 @@ import os
 import re
 
 
-def make_path_list(input_dir: str, output_dir: str, depth=2):
+def make_path_list(input_dir: str, output_dir: str, depth=1):
     path_list = []
     for input in os.listdir(input_dir):
         input_path = os.path.join(input_dir, input)
@@ -16,9 +16,10 @@ def make_path_list(input_dir: str, output_dir: str, depth=2):
 
 
 def extract_frame(input_path: str, output_path: str):
+    os.makedirs(output_path, exist_ok=True)
     command = f'ffmpeg -y -i {input_path} {os.path.join(output_path, "image_%05d.jpg")}'
     print(command)
-    # os.system(command)
+    os.system(command)
 
 
 if __name__ == '__main__':
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_dir', type=str, required=True)
     parser.add_argument('--output_dir', type=str, required=True)
-    parser.add_argument('--depth', type=int, default=2, required=False)
+    parser.add_argument('--depth', type=int, default=1, required=False)
     args = parser.parse_args()
 
     path_list = make_path_list(args.input_dir, args.output_dir, args.depth)
