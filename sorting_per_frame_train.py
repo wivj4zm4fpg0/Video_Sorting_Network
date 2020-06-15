@@ -198,13 +198,14 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
     loss_avg = epoch_loss / iterate_len
     full_fit_accuracy_avg = epoch_full_fit_accuracy / iterate_len
     per_fit_accuracy_avg = epoch_per_fit_accuracy / iterate_len
+    sorting_accuracy_avg = epoch_sorting_accuracy / iterate_len
     epoch_time = time() - start_time
     learning_rate = optimizer.state_dict()['param_groups'][0]['lr']
     print(f'{subset}: epoch = {epoch_num + 1}, {loss_avg = }, {full_fit_accuracy_avg = }, ' +
-          f'{per_fit_accuracy_avg=}, {epoch_sorting_accuracy = }, {epoch_time = }, {learning_rate = }')
+          f'{per_fit_accuracy_avg=}, {sorting_accuracy_avg = }, {epoch_time = }, {learning_rate = }')
     with open(log_file, mode='a') as f:
         f.write(f'{epoch_num + 1},{loss_avg},{full_fit_accuracy_avg},{per_fit_accuracy_avg},' +
-                f'{epoch_sorting_accuracy},{epoch_time},{learning_rate}\n')
+                f'{sorting_accuracy_avg},{epoch_time},{learning_rate}\n')
 
 
 # 推論を実行
