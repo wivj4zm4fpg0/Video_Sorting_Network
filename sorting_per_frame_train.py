@@ -185,8 +185,8 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
         per_fit_accuracy = (predicted == labels).sum().item() / (temp_batch_size * frame_num)
         sorting_accuracy = \
             (predicted[:, sorting_start_index:sorting_end_index] == labels[
-                                                                    sorting_start_index:sorting_end_index].sum().item() / (
-                         temp_batch_size * (sorting_end_index - sorting_start_index)))
+                                                                    sorting_start_index:sorting_end_index]).sum().item() / (
+                         temp_batch_size * (sorting_end_index - sorting_start_index))
         full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
         epoch_per_fit_accuracy += per_fit_accuracy
         epoch_full_fit_accuracy += full_fit_accuracy
