@@ -81,9 +81,9 @@ current_epoch = 0
 # ログファイルの生成
 if not args.no_reset_log_file:
     with open(log_train_path, mode='w') as f:
-        f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
+        f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,sorting_accuracy,time,learning_rate\n')
     with open(log_test_path, mode='w') as f:
-        f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
+        f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,sorting_accuracy,time,learning_rate\n')
 
 # CUDA環境の有無で処理を変更
 if args.use_cuda:
@@ -167,6 +167,7 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
     epoch_loss = 0
     epoch_full_fit_accuracy = 0
     epoch_per_fit_accuracy = 0
+    epoch_sorting_accuracy = 0
     start_time = time()
 
     for i, data in enumerate(data_loader):
@@ -181,13 +182,18 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
         # 後処理
         predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
         # predicted = torch.max(outputs, 2)[1]  # batch_first = True
-        per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
+        per_fit_accuracy = (predicted == labels).sum().item() / (temp_batch_size * frame_num)
+        sorting_accuracy = \
+            (predicted[:, sorting_start_index:sorting_end_index] == labels[
+                                                                    sorting_start_index:sorting_end_index].sum().item() / (
+                         temp_batch_size * (sorting_end_index - sorting_start_index)))
         full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
         epoch_per_fit_accuracy += per_fit_accuracy
         epoch_full_fit_accuracy += full_fit_accuracy
+        epoch_sorting_accuracy += sorting_accuracy
         epoch_loss += loss
         print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, ' +
-              f'{full_fit_accuracy = }, {per_fit_accuracy=}')
+              f'{full_fit_accuracy = }, {per_fit_accuracy =}, {sorting_accuracy = }')
 
     loss_avg = epoch_loss / iterate_len
     full_fit_accuracy_avg = epoch_full_fit_accuracy / iterate_len
@@ -195,10 +201,10 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
     epoch_time = time() - start_time
     learning_rate = optimizer.state_dict()['param_groups'][0]['lr']
     print(f'{subset}: epoch = {epoch_num + 1}, {loss_avg = }, {full_fit_accuracy_avg = }, ' +
-          f'{per_fit_accuracy_avg=}, {epoch_time = }, {learning_rate = }')
+          f'{per_fit_accuracy_avg=}, {epoch_sorting_accuracy = }, {epoch_time = }, {learning_rate = }')
     with open(log_file, mode='a') as f:
         f.write(f'{epoch_num + 1},{loss_avg},{full_fit_accuracy_avg},{per_fit_accuracy_avg},' +
-                f'{epoch_time},{learning_rate}\n')
+                f'{epoch_sorting_accuracy},{epoch_time},{learning_rate}\n')
 
 
 # 推論を実行
