@@ -17,7 +17,10 @@ def make_path_list(input_dir: str, output_dir: str, depth=1):
 
 def extract_frame(input_path: str, output_path: str):
     os.makedirs(output_path, exist_ok=True)
-    command = f'ffmpeg -loglevel warning -y -i {input_path} {os.path.join(output_path, "image_%05d.jpg")}'
+    command = 'ffmpeg -loglevel warning -y -i {} {}'.format(
+        input_path,
+        os.path.join(output_path, "image_%05d.jpg")
+    )
     print(command)
     os.system(command)
 
