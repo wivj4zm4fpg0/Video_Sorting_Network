@@ -20,7 +20,9 @@ parser.add_argument('--class_path', type=str, required=True)
 parser.add_argument('--output_dir', type=str, required=True)
 parser.add_argument('--epoch_num', type=int, default=100, required=False)
 parser.add_argument('--batch_size', type=int, default=4, required=False)
-parser.add_argument('--frame_num', type=int, default=4, required=False)
+parser.add_argument('--frame_num', type=int, default=12, required=False)
+parser.add_argument('--sorting_start_index', type=int, default=4, required=False)
+parser.add_argument('--sorting_end_index', type=int, default=8, required=False)
 parser.add_argument('--frame_interval', type=int, default=1, required=False)
 parser.add_argument('--use_cuda', action='store_true')
 parser.add_argument('--use_pretrained_model', action='store_true')
@@ -37,6 +39,8 @@ args = parser.parse_args()
 batch_size = args.batch_size
 frame_num = args.frame_num
 frame_interval = args.frame_interval
+sorting_start_index = args.sorting_start_index
+sorting_end_index = args.sorting_end_index
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
 log_test_path = os.path.join(args.output_dir, 'log_test.csv')
 os.makedirs(args.output_dir, exist_ok=True)
@@ -50,13 +54,19 @@ train_loader = DataLoader(
     VideoSortingPerFrameTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
-        interval_frame=frame_interval),
+        interval_frame=frame_interval,
+        sorting_start_index=sorting_start_index,
+        sorting_end_index=sorting_end_index
+    ),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
     VideoSortingPerFrameTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
-        interval_frame=frame_interval),
+        interval_frame=frame_interval,
+        sorting_start_index=sorting_start_index,
+        sorting_end_index=sorting_end_index
+    ),
     batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)
 test_iterate_len = len(test_loader)

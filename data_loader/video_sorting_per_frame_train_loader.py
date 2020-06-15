@@ -30,12 +30,13 @@ def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):
 
 class VideoSortingPerFrameTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
 
-    def __init__(self, pre_processing: transforms.Compose = None, frame_num=4, path_load: list = None,
-                 random_crop_size=224, interval_frame=4, sorting_start_index=2):
+    def __init__(self, pre_processing: transforms.Compose = None, frame_num=12, path_load: list = None,
+                 random_crop_size=224, interval_frame=4, sorting_start_index=4, sorting_end_index=8):
         super().__init__(pre_processing, frame_num, path_load, random_crop_size)
         self.crop_video_len = (frame_num - 1) * interval_frame + frame_num
         self.interval_len = interval_frame
-        self.shuffle_list = list(range(frame_num - sorting_start_index))
+        self.shuffle_list = list(range(sorting_start_index, sorting_end_index))
+        self.sorting_start_index = sorting_start_index
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
@@ -51,7 +52,7 @@ class VideoSortingPerFrameTrainDataSet(VideoTrainDataSet):  # video_train_loader
         shuffle_indices = copy.copy(frame_indices)
         random.shuffle(self.shuffle_list)
         for i, e in enumerate(self.shuffle_list):
-            shuffle_indices[i] = frame_indices[e]
+            shuffle_indices[i + self.sorting_start_index] = frame_indices[e]
         shuffle_indices = torch.tensor(shuffle_indices)
 
 
@@ -128,7 +129,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     def image_show(img):  # 画像を表示
         np_img = np.transpose(make_grid(img).numpy(), (1, 2, 0))
         cv2.imshow('image', cv2.cvtColor(np_img, cv2.COLOR_BGR2RGB))
-        cv2.moveWindow('image', 100, 200)
+        cv2.moveWindow('image', 30, 100)
         if cv2.waitKey(0) & 0xFF == ord('q'):
             exit(0)
 
