@@ -63,16 +63,3 @@ print(f'{train = }')
 print(f'{test = }')
 print(f'{none = }')
 print(f'{train + test + none = }')
-
-# video_num = 0
-# correct_video_num = 0
-# for class_dir in os.listdir(video_dir):
-#     if '.rar' in class_dir:
-#         continue
-#     class_dir_path = os.path.join(video_dir, class_dir)
-#     for video in os.listdir(class_dir_path):
-#         video_num += 1
-#         if video in video_name_list:
-#             correct_video_num += 1
-# print(f'{video_num = }')
-# print(f'{correct_video_num = }')
