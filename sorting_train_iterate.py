@@ -52,13 +52,13 @@ train_loader = DataLoader(
     VideoSortTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
-        interval_frame=interval_frames),
+        frame_interval=interval_frames),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
     VideoSortTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
-        interval_frame=interval_frames),
+        frame_interval=interval_frames),
     batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)
 test_iterate_len = len(test_loader)

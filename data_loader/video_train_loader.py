@@ -29,7 +29,8 @@ class VideoTrainDataSet(Dataset):  # torch.utils.data.Datasetを継承
     def __init__(self, pre_processing: transforms.Compose = None, frame_num=4, path_load: list = None,
                  random_crop_size=224, frame_interval=0):
 
-        self.frame_num = frame_num * (frame_interval + 1)
+        self.crop_video_len = (frame_num - 1) * frame_interval + frame_num
+        self.frame_num = frame_num
         self.data_list = path_load
         self.frame_interval = frame_interval
 
@@ -46,13 +47,15 @@ class VideoTrainDataSet(Dataset):  # torch.utils.data.Datasetを継承
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
-        frame_list = \
-            [os.path.join(self.data_list[index][0], frame) for frame in natsorted(os.listdir(self.data_list[index][0]))]
+
+        nat_list = natsorted(os.listdir(self.data_list[index][0]))
+        frame_list = [os.path.join(self.data_list[index][0], frame) for frame in nat_list]
         frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
         video_len = len(frame_list)
-        # {frame_index + 0, frame_index + 1, ..., frame_index + self.frame_num - 1}番号のフレームを取得するのに使う
-        frame_index = randint(0, video_len - self.frame_num - 1)
-        frame_indices = range(frame_index, frame_index + self.frame_num, self.frame_interval + 1)
+        assert self.crop_video_len < video_len
+
+        start_index = randint(0, video_len - self.crop_video_len)
+        frame_indices = range(start_index, start_index + self.crop_video_len, self.frame_interval + 1)
 
         # self.pre_processing.transforms[0].set_degree()  # RandomRotationの回転角度を設定
         # RandomCropの設定を行う. 引数に画像サイズが必要なので最初のフレームを渡す
@@ -61,10 +64,9 @@ class VideoTrainDataSet(Dataset):  # torch.utils.data.Datasetを継承
         self.pre_processing.transforms[1].p = randint(0, 1)
 
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
-        # リスト内包表記で検索
         video_tensor = [pre_processing(frame_list[i]) for i in frame_indices]
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
-        label = self.data_list[index][1]
+        label = torch.tensor(self.data_list[index][1])
         return video_tensor, label  # 入力画像とそのラベルをタプルとして返す
 
     def __len__(self) -> int:  # データセットの数を返すようにする
@@ -101,7 +103,8 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
             exit(0)
 
 
-    for input_images, input_label in data_loader:
-        print(input_label)
-        for images_per_batch in input_images:
+    for data in data_loader:
+        inputs, labels = data
+        print(labels)
+        for images_per_batch in inputs:
             image_show(images_per_batch)

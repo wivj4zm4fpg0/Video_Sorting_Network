@@ -50,13 +50,13 @@ train_loader = DataLoader(
     VideoSortTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
-        interval_frame=frame_interval),
+        frame_interval=frame_interval),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
     VideoSortTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
-        interval_frame=frame_interval),
+        frame_interval=frame_interval),
     batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)
 test_iterate_len = len(test_loader)
@@ -177,7 +177,7 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
         epoch_full_fit_accuracy += full_fit_accuracy
         epoch_loss += loss
         print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, ' +
-              f'{full_fit_accuracy = }, {per_fit_accuracy=}')
+              f'{full_fit_accuracy = }, {per_fit_accuracy = }')
 
     loss_avg = epoch_loss / iterate_len
     full_fit_accuracy_avg = epoch_full_fit_accuracy / iterate_len
@@ -185,7 +185,7 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
     epoch_time = time() - start_time
     learning_rate = optimizer.state_dict()['param_groups'][0]['lr']
     print(f'{subset}: epoch = {epoch_num + 1}, {loss_avg = }, {full_fit_accuracy_avg = }, ' +
-          f'{per_fit_accuracy_avg=}, {epoch_time = }, {learning_rate = }')
+          f'{per_fit_accuracy_avg = }, {epoch_time = }, {learning_rate = }')
     with open(log_file, mode='a') as f:
         f.write(f'{epoch_num + 1},{loss_avg},{full_fit_accuracy_avg},{per_fit_accuracy_avg},' +
                 f'{epoch_time},{learning_rate}\n')

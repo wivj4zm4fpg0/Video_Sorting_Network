@@ -6,7 +6,7 @@ from time import time
 import torch
 from torch.utils.data import DataLoader
 
-from models.CNN3D_LSTM_Model import SiameseCNN3D
+from models.CNN3D_LSTM_Model import CNN3D_LSTM
 from data_loader.video_sort_3dcnn_train_loader import VideoSort3DCNNTrainDataSet
 from data_loader.video_test_loader import ucf101_test_path_load
 from data_loader.video_train_loader import ucf101_train_path_load
@@ -21,7 +21,7 @@ parser.add_argument('--frame_num', type=int, default=4, required=False)
 parser.add_argument('--use_cuda', action='store_true')
 parser.add_argument('--use_pretrained_model', action='store_true')
 parser.add_argument('--use_bidirectional', action='store_true')
-parser.add_argument('--learning_rate', type=float, default=0.01, required=False)
+parser.add_argument('--learning_rate', type=float, default=0.001, required=False)
 parser.add_argument('--model_save_path', type=str, required=False)
 parser.add_argument('--model_load_path', type=str, required=False)
 # parser.add_argument('--depth', type=int, default=2, required=False)
@@ -63,8 +63,7 @@ test_iterate_len = len(test_loader)
 
 # 初期設定
 # resnet18を取得
-Net = SiameseCNN3D(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional,
-                   task='classification')
+Net = CNN3D_LSTM(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
 criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
@@ -116,7 +115,7 @@ def inner_product_loss(outputs: torch.Tensor) -> torch.Tensor:
 
 # VideoDataTrainDataSetの出力はフレームのみ．ラベルの取得はtrain_loader.dataset.shuffle_listを呼び出すこと
 # 訓練を行う
-def train(inputs):
+def train(inputs, labels):
     # 演算開始. start calculate.
     # train_loader.dataset.update_shuffle_list()
     """
@@ -126,10 +125,9 @@ def train(inputs):
     """
     # labels = torch.tensor(train_loader.dataset.shuffle_list)
     # labels = labels.expand(inputs.size()[0], frame_num)
-    labels = inputs[1]
     labels = labels.to(device, non_blocking=True)
     # outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
-    outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
+    outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
     # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = False
     loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
@@ -137,27 +135,25 @@ def train(inputs):
     # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
-    return outputs, loss.item(), labels
+    return outputs, loss.item()
 
 
 # VideoDataTestDataSetの出力は(フレーム，ラベル)である．
 # テストを行う
-def test(inputs):
+def test(inputs, labels):
     with torch.no_grad():  # 勾配計算が行われないようにする
         # labels = torch.tensor(inputs[1])
-        labels = inputs[1]
         labels = labels.to(device, non_blocking=True)
-        outputs = Net(inputs[0])  # この記述方法で順伝搬が行われる
+        outputs = Net(inputs)  # この記述方法で順伝搬が行われる
         # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = False
         loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
         # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
         # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
-    return outputs, loss.item(), labels
+    return outputs, loss.item()
 
 
 # 推論を行う
-def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, log_file: str, iterate_len: int,
-             get_batch_size_func):
+def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, log_file: str, iterate_len: int):
     epoch_loss = 0
     epoch_full_fit_accuracy = 0
     epoch_per_fit_accuracy = 0
@@ -165,23 +161,23 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
 
     for i, data in enumerate(data_loader):
         # 前処理
-        inputs = data
-        temp_batch_size = get_batch_size_func(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
+        inputs, labels = data
+        temp_batch_size = len(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
         # 演算開始. start calculate.
-        outputs, loss, labels = calc_func(inputs)
+        outputs, loss = calc_func(inputs, labels)
 
         # 後処理
         predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
         # predicted = torch.max(outputs, 2)[1]  # batch_first = True
-        per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
+        per_fit_accuracy = (predicted == labels).sum().item() / (temp_batch_size * frame_num)
         full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
         epoch_per_fit_accuracy += per_fit_accuracy
         epoch_full_fit_accuracy += full_fit_accuracy
         epoch_loss += loss
         print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, ' +
-              f'{full_fit_accuracy = }, {per_fit_accuracy=}')
+              f'{full_fit_accuracy = }, {per_fit_accuracy = }')
 
     loss_avg = epoch_loss / iterate_len
     full_fit_accuracy_avg = epoch_full_fit_accuracy / iterate_len
@@ -189,7 +185,7 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
     epoch_time = time() - start_time
     learning_rate = optimizer.state_dict()['param_groups'][0]['lr']
     print(f'{subset}: epoch = {epoch_num + 1}, {loss_avg = }, {full_fit_accuracy_avg = }, ' +
-          f'{per_fit_accuracy_avg=}, {epoch_time = }, {learning_rate = }')
+          f'{per_fit_accuracy_avg = }, {epoch_time = }, {learning_rate = }')
     with open(log_file, mode='a') as f:
         f.write(f'{epoch_num + 1},{loss_avg},{full_fit_accuracy_avg},{per_fit_accuracy_avg},' +
                 f'{epoch_time},{learning_rate}\n')
@@ -200,10 +196,9 @@ try:
     for epoch in range(current_epoch, args.epoch_num):
         current_epoch = epoch
         Net.train()
-        # estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x))
-        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len, lambda x: len(x[0]))
+        estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
         Net.eval()
-        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len, lambda x: len(x[0]))
+        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
 except KeyboardInterrupt:  # Ctrl-Cで保存．
     if args.model_save_path:
         torch.save({

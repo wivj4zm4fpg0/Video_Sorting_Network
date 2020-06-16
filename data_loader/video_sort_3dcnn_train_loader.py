@@ -1,3 +1,4 @@
+import itertools
 import os
 import random
 
@@ -31,30 +32,38 @@ class VideoSort3DCNNTrainDataSet(VideoTrainDataSet):  # video_train_loader.Video
 
     def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_load: list = None,
                  random_crop_size: int = 224, cnn_frame_num: int = 16):
-        super().__init__(pre_processing, frame_num, path_load, random_crop_size)
+        super().__init__(pre_processing, frame_num, path_load, random_crop_size, frame_interval=0)
         assert cnn_frame_num % frame_num == 0
         self.cnn_frame_num = cnn_frame_num
-        self.crop_frame_len = cnn_frame_num // frame_num
-        self.shuffle_list = list(range(frame_num))
+        self.crop_frame_len = cnn_frame_num * frame_num
+        sort_seq = list(itertools.permutations(list(range(frame_num)), frame_num))
+        self.shuffle_list = []
+        for v in sort_seq:
+            v = list(v)
+            if v[::-1] in self.shuffle_list:
+                continue
+            self.shuffle_list.append(v)
+        self.shuffle_len = len(self.shuffle_list)
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
         while True:
-            frame_list = [os.path.join(self.data_list[index][0], frame) for frame in
-                          natsorted(os.listdir(self.data_list[index][0]))]
+            nat_list = natsorted(os.listdir(self.data_list[index][0]))
+            frame_list = [os.path.join(self.data_list[index][0], frame) for frame in nat_list]
             frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
             video_len = len(frame_list)
-            if self.cnn_frame_num * self.frame_num < video_len:
+            if self.crop_frame_len < video_len:
                 break
             else:
                 index = random.randint(0, len(self.data_list))
 
-        start_index = random.randint(0, video_len - self.cnn_frame_num * self.frame_num)
-        frame_indices = list(range(video_len))[
-                        start_index:start_index + self.frame_num * self.cnn_frame_num:self.cnn_frame_num]
+        start_index = random.randint(0, video_len - self.crop_frame_len)
+        frame_indices = list(range(video_len))[start_index:start_index + self.crop_frame_len:self.cnn_frame_num]
         frame_indices = [list(range(frame_index, frame_index + self.cnn_frame_num)) for frame_index in frame_indices]
-        frame_indices = [[frame_indices[i], torch.tensor(i)] for i in range(self.frame_num)]
-        random.shuffle(frame_indices)
+        shuffle_frame_indices = list(range(self.frame_num))
+        label = self.shuffle_list[random.randint(0, self.shuffle_len - 1)]
+        for i, v in enumerate(label):
+            shuffle_frame_indices[i] = (frame_indices[v])
 
         # transformsの設定
         # self.pre_processing.transforms[0].set_degree()  # RandomRotationの回転角度を設定
@@ -66,29 +75,16 @@ class VideoSort3DCNNTrainDataSet(VideoTrainDataSet):  # video_train_loader.Video
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
 
         output_videos = []
-        output_labels = []
-        for frames_and_label in frame_indices:
-            video_tensor = [pre_processing(frame_list[frame_index]) for frame_index in frames_and_label[0]]
+        for frames in shuffle_frame_indices:
+            video_tensor = [pre_processing(frame_list[frame_index]) for frame_index in frames]
             video_tensor = torch.stack(video_tensor)
             output_videos.append(video_tensor)
-            output_labels.append(frames_and_label[1])
         output_videos = torch.stack(output_videos)
-        output_labels = torch.stack(output_labels)
 
-        return output_videos, output_labels  # 入力画像とそのラベルをタプルとして返す
+        return output_videos, torch.tensor(label)  # 入力画像とそのラベルをタプルとして返す
 
     def __len__(self) -> int:  # データセットの数を返すようにする
         return len(self.data_list)
-
-    def update_shuffle_list(self):
-        self.shuffle_list = random.sample(self.shuffle_list, self.frame_num)
-
-    def frames_shuffle(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        shuffle_input = torch.zeros(input_tensor.size())
-        for i, frames in enumerate(input_tensor):
-            for j, shuffle_value in enumerate(self.shuffle_list):
-                shuffle_input[i][j] = input_tensor[i][shuffle_value]
-        return shuffle_input
 
 
 if __name__ == '__main__':  # UCF101データセットの読み込みテストを行う
@@ -97,7 +93,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_path', type=str, required=True)
-    parser.add_argument('--batch_size', type=int, default=2, required=False)
+    parser.add_argument('--batch_size', type=int, default=1, required=False)
     parser.add_argument('--depth', type=int, default=1, required=False)
     parser.add_argument('--frame_num', type=int, default=4, required=False)
 
@@ -120,8 +116,8 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
             exit(0)
 
 
-    for inputs in data_loader:
-        videos, labels = inputs
+    for data in data_loader:
+        videos, labels = data
         print(f'{labels = }')
         for videos_per_batch in videos:
             for video_per_seq in videos_per_batch:
