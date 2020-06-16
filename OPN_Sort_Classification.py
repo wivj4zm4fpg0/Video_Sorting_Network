@@ -22,7 +22,7 @@ parser.add_argument('--class_path', type=str, required=True)
 parser.add_argument('--epoch_num', type=int, default=100, required=False)
 parser.add_argument('--batch_size', type=int, default=4, required=False)
 parser.add_argument('--frame_num', type=int, default=4, required=False)
-parser.add_argument('--interval_frame', type=int, default=0, required=False)
+parser.add_argument('--frame_interval', type=int, default=0, required=False)
 parser.add_argument('--use_cuda', action='store_true')
 parser.add_argument('--use_pretrained_model', action='store_true')
 parser.add_argument('--learning_rate', type=float, default=0.01, required=False)
@@ -34,7 +34,7 @@ parser.add_argument('--load_epoch_num', action='store_true')
 args = parser.parse_args()
 batch_size = args.batch_size
 frame_num = args.frame_num
-interval_frame = args.interval_frame
+frame_interval = args.frame_interval
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
 log_test_path = os.path.join(args.output_dir, 'log_test.csv')
 os.makedirs(args.output_dir, exist_ok=True)
@@ -46,14 +46,14 @@ train_loader = DataLoader(
     VideoSortingClassificationTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
-        frame_interval=interval_frame
+        frame_interval=frame_interval
     ),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
     VideoSortingClassificationTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
-        frame_interval=interval_frame
+        frame_interval=frame_interval
     ),
     batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)

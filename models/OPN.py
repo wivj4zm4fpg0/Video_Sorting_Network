@@ -20,7 +20,7 @@ class OPN(nn.Module):
         resnet18_last_dim = 512
 
         self.comb_fc1 = nn.Linear(resnet18_last_dim * 2, 512)
-        class_num = math.factorial(frame_num)
+        class_num = math.factorial(frame_num) // 2
         self.combination_list = list(itertools.combinations(list(range(frame_num)), 2))
         self.comb_fc2 = nn.Linear(512 * len(self.combination_list), class_num)
         nn.init.kaiming_normal_(self.comb_fc1.weight)
