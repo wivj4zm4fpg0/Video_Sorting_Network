@@ -26,17 +26,18 @@ parser.add_argument('--learning_rate', type=float, default=0.01, required=False)
 parser.add_argument('--model_save_path', type=str, required=False)
 parser.add_argument('--model_load_path', type=str, required=False)
 # parser.add_argument('--depth', type=int, default=2, required=False)
-parser.add_argument('--model_save_interval', type=int, default=50, required=False)
+# parser.add_argument('--model_save_interval', type=int, default=50, required=False)
 parser.add_argument('--train_label_path', type=str, required=True)
 parser.add_argument('--test_label_path', type=str, required=True)
 parser.add_argument('--class_path', type=str, required=True)
 parser.add_argument('--no_reset_log_file', action='store_true')
 parser.add_argument('--load_epoch_num', action='store_true')
-parser.add_argument('--interval_frames', type=int, default=4, required=False)
+parser.add_argument('--frame_interval', type=int, default=4, required=False)
 
 args = parser.parse_args()
 batch_size = args.batch_size
 frame_num = args.frame_num
+frame_interval = args.frame_interval
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
 log_test_path = os.path.join(args.output_dir, 'log_test.csv')
 os.makedirs(args.output_dir, exist_ok=True)
@@ -50,21 +51,21 @@ train_loader = DataLoader(
     VideoSortingClassificationTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
-        interval_frame=args.interval_frames),
+        frame_interval=frame_interval),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
     VideoSortingClassificationTrainDataSet(
         frame_num=frame_num,
         path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
-        interval_frame=args.interval_frames),
+        frame_interval=frame_interval),
     batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)
 test_iterate_len = len(test_loader)
 
 # 初期設定
 # resnet18を取得
-Net = CNN_LSTM(math.factorial(args.frame_num), pretrained=args.use_pretrained_model,
-               bidirectional=args.use_bidirectional, task='classification')
+Net = CNN_LSTM(math.factorial(args.frame_num) // 2, pretrained=args.use_pretrained_model,
+               bidirectional=args.use_bidirectional)
 criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
@@ -92,7 +93,6 @@ if args.model_load_path:
     if args.load_epoch_num:
         current_epoch = checkpoint['epoch']
     print('complete load model')
-
 
 # 双方向の有無で出力の取り方を変える
 if args.use_bidirectional:
@@ -138,7 +138,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
 
         # 後処理
         predicted = torch.max(reshape_output(outputs), 1)[1]
-        accuracy = (predicted == labels).sum().item() / batch_size
+        accuracy = (predicted == labels).sum().item() / len(inputs)
         epoch_accuracy += accuracy
         epoch_loss += loss
         print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, {accuracy = }')
@@ -150,6 +150,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
     print(f'{subset}: epoch = {epoch_num + 1}, {loss_avg = }, {accuracy_avg = }, {epoch_time = }, {learning_rate = }')
     with open(log_file, mode='a') as f:
         f.write(f'{epoch_num + 1},{loss_avg},{accuracy_avg},{epoch_time},{learning_rate}\n')
+
 
 # 推論を実行
 try:
