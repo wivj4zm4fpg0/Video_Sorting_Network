@@ -43,7 +43,6 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
                 continue
             self.shuffle_list.append(v)
         self.shuffle_len = len(self.shuffle_list)
-        print(self.shuffle_list)
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
