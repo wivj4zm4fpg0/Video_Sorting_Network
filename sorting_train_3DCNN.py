@@ -125,7 +125,6 @@ def train(inputs, labels):
     """
     # labels = torch.tensor(train_loader.dataset.shuffle_list)
     # labels = labels.expand(inputs.size()[0], frame_num)
-    labels = labels.to(device, non_blocking=True)
     # outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
@@ -143,7 +142,6 @@ def train(inputs, labels):
 def test(inputs, labels):
     with torch.no_grad():  # 勾配計算が行われないようにする
         # labels = torch.tensor(inputs[1])
-        labels = labels.to(device, non_blocking=True)
         outputs = Net(inputs)  # この記述方法で順伝搬が行われる
         # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = False
         loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
@@ -162,6 +160,7 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
     for i, data in enumerate(data_loader):
         # 前処理
         inputs, labels = data
+        labels = labels.to(device, non_blocking=True)
         temp_batch_size = len(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
