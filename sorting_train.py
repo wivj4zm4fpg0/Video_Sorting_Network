@@ -125,8 +125,6 @@ def train(inputs, labels):
     """
     # labels = torch.tensor(train_loader.dataset.shuffle_list)
     # labels = labels.expand(inputs.size()[0], frame_num)
-    labels = labels.to(device, non_blocking=True)
-    # outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
     loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
@@ -135,21 +133,19 @@ def train(inputs, labels):
     # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
     loss.backward()  # 逆伝搬で勾配を求める
     optimizer.step()  # 重みを更新
-    return outputs, loss.item(), labels
+    return outputs, loss.item()
 
 
 # VideoDataTestDataSetの出力は(フレーム，ラベル)である．
 # テストを行う
 def test(inputs, labels):
     with torch.no_grad():  # 勾配計算が行われないようにする
-        # labels = torch.tensor(inputs[1])
-        labels = labels.to(device, non_blocking=True)
         outputs = Net(inputs)  # この記述方法で順伝搬が行われる
         loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
         # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
         # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
         # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
-    return outputs, loss.item(), labels
+    return outputs, loss.item()
 
 
 # 推論を行う
@@ -162,16 +158,17 @@ def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, lo
     for i, data in enumerate(data_loader):
         # 前処理
         inputs, labels = data
+        labels = labels.to(device, non_blocking=True)
         temp_batch_size = len(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
         answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
 
         # 演算開始. start calculate.
-        outputs, loss, labels = calc_func(inputs, labels)
+        outputs, loss = calc_func(inputs, labels)
 
         # 後処理
         predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
         # predicted = torch.max(outputs, 2)[1]  # batch_first = True
-        per_fit_accuracy = (predicted == labels).sum().item() / (batch_size * frame_num)
+        per_fit_accuracy = (predicted == labels).sum().item() / (temp_batch_size * frame_num)
         full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
         epoch_per_fit_accuracy += per_fit_accuracy
         epoch_full_fit_accuracy += full_fit_accuracy
