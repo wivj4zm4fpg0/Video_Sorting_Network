@@ -129,8 +129,8 @@ def train(inputs, labels):
     # outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     outputs = Net(inputs)  # この記述方法で順伝搬が行われる (seq_len, batch_size, class_num)
     optimizer.zero_grad()  # 勾配を初期化
-    # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
-    loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
+    loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
+    # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
     # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
     # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
     loss.backward()  # 逆伝搬で勾配を求める
@@ -145,8 +145,8 @@ def test(inputs, labels):
         # labels = torch.tensor(inputs[1])
         labels = labels.to(device, non_blocking=True)
         outputs = Net(inputs)  # この記述方法で順伝搬が行われる
-        # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
-        loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
+        loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算
+        # loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
         # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
         # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
     return outputs, loss.item(), labels
