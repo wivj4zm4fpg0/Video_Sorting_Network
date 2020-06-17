@@ -108,4 +108,4 @@ if __name__ == '__main__':
     model = CNN_LSTM()
     input = torch.randn(2, 4, 3, 256, 256)
     output = model(input)
-    print(f'{output.shape=}')
+    print(f'output.shape = {output.shape}')
