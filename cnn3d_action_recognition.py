@@ -62,6 +62,7 @@ test_iterate_len = len(test_loader)
 # 初期設定
 Net = r2plus1d_18(pretrained=args.use_pretrained_model)
 Net.fc = nn.Linear(512, args.class_num)
+nn.init.kaiming_normal_(Net.fc.weight)
 criterion = nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
