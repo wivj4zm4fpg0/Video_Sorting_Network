@@ -6,7 +6,7 @@ from time import time
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from torchvision.models.video.resnet import r2plus1d_18
+from torchvision.models.video.resnet import r3d_18
 
 from data_loader.path_list_loader import generate_path_list
 from data_loader.video_test_loader import VideoTestDataSet
@@ -64,7 +64,7 @@ train_iterate_len = len(train_loader)
 test_iterate_len = len(test_loader)
 
 # 初期設定
-Net = r2plus1d_18(pretrained=args.use_pretrained_model, num_classes=args.class_num)
+Net = r3d_18(pretrained=args.use_pretrained_model, num_classes=args.class_num)
 criterion = nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
