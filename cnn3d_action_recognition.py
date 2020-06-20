@@ -65,7 +65,7 @@ test_iterate_len = len(test_loader)
 
 # 初期設定
 Net = generate_model(18)
-if args.use_pretrained:
+if args.use_pretrained_model:
     checkpoint = torch.load('r3d18_KM_200ep.pth')
     Net.fc = nn.Linear(512, 1039)
     Net.load_state_dict(checkpoint['state_dict'])
