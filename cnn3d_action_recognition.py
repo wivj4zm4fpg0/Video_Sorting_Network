@@ -64,10 +64,7 @@ train_iterate_len = len(train_loader)
 test_iterate_len = len(test_loader)
 
 # 初期設定
-Net = r2plus1d_18(pretrained=args.use_pretrained_model)
-Net.fc = nn.Linear(512, args.class_num)
-nn.init.normal_(Net.fc.weight, 0, 0.01)
-nn.init.constant_(Net.fc.bias, 0)
+Net = r2plus1d_18(pretrained=args.use_pretrained_model, num_classes=args.class_num)
 criterion = nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
