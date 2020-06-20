@@ -134,7 +134,7 @@ def estimate(data_loader, calcu, subset: str, epoch_num: int, log_file: str, ite
     for i, data in enumerate(data_loader):
         # 前処理
         inputs, labels = data
-        inputs.permute(0, 2, 1, 3, 4)
+        inputs = inputs.permute(0, 2, 1, 3, 4)
         labels = labels.to(device, non_blocking=True)
 
         # 演算開始. start calculate.
@@ -165,19 +165,17 @@ try:
         Net.eval()
         estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
 except KeyboardInterrupt:  # Ctrl-Cで保存．
-    if args.model_save_path:
-        torch.save({
-            'epoch': current_epoch,
-            'model_state_dict': Net.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-        }, model_save_path)
-        print('complete save model')
-        exit(0)
-
-if args.model_save_path:
     torch.save({
-        'epoch': args.epoch_num,
+        'epoch': current_epoch,
         'model_state_dict': Net.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
     }, model_save_path)
     print('complete save model')
+    exit(0)
+
+torch.save({
+    'epoch': args.epoch_num,
+    'model_state_dict': Net.state_dict(),
+    'optimizer_state_dict': optimizer.state_dict(),
+}, model_save_path)
+print('complete save model')
