@@ -3,6 +3,8 @@ logs
 logs/*
 jsons
 jsons/*
+scripts/
+scripts/*
 __pycache__/
 *.pth
 test/
