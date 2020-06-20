@@ -8,17 +8,15 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchvision.models.video.resnet import r2plus1d_18
 
-from data_loader.video_test_loader import VideoTestDataSet, ucf101_test_path_load
-from data_loader.video_train_loader import VideoTrainDataSet, ucf101_train_path_load
+from data_loader.path_list_loader import generate_path_list
+from data_loader.video_test_loader import VideoTestDataSet
+from data_loader.video_train_loader import VideoTrainDataSet
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_path', type=str, required=True)
 parser.add_argument('--output_dir', type=str, required=True)
-parser.add_argument('--train_label_path', type=str, required=True)
-parser.add_argument('--test_label_path', type=str, required=True)
-parser.add_argument('--class_path', type=str, required=True)
-parser.add_argument('--class_num', type=int, default=101, required=False)
+parser.add_argument('--class_num', type=int, default=101, required=False, help='ucf101=101, hmdb51=51')
 parser.add_argument('--epoch_num', type=int, default=50, required=False)
 parser.add_argument('--batch_size', type=int, default=16, required=False)
 parser.add_argument('--frame_num', type=int, default=8, required=False)
@@ -28,6 +26,12 @@ parser.add_argument('--learning_rate', type=float, default=0.01, required=False)
 parser.add_argument('--model_load_path', type=str, required=False)
 parser.add_argument('--no_reset_log_file', action='store_true')
 parser.add_argument('--load_epoch_num', action='store_true')
+
+parser.add_argument('--dataset', type=str, choices=['ucf101', 'hmdb51'], required=True)
+parser.add_argument('--ucf101_train_label_path', type=str, required=False)
+parser.add_argument('--ucf101_test_label_path', type=str, required=False)
+parser.add_argument('--ucf101_class_path', type=str, required=False)
+parser.add_argument('--hmdb51_subset_path', type=str, required=False)
 
 args = parser.parse_args()
 batch_size = args.batch_size
@@ -43,7 +47,7 @@ json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w')
 train_loader = DataLoader(
     VideoTrainDataSet(
         frame_num=frame_num,
-        path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
+        path_list=generate_path_list(args, 'train'),
         frame_interval=0
     ),
     batch_size=batch_size,
@@ -51,7 +55,7 @@ train_loader = DataLoader(
 test_loader = DataLoader(
     VideoTestDataSet(
         frame_num=frame_num,
-        path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
+        path_list=generate_path_list(args, 'test'),
         frame_interval=0
     ),
     batch_size=batch_size,

@@ -29,9 +29,9 @@ def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):
 
 class VideoTimeComparisonDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
 
-    def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 8, path_load: list = None,
+    def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 8, path_list: list = None,
                  random_crop_size: int = 224, interval_frame: int = 0):
-        super().__init__(pre_processing, frame_num, path_load, random_crop_size)
+        super().__init__(pre_processing, frame_num, path_list, random_crop_size)
         self.interval_len = interval_frame
         self.shuffle_list = list(range(frame_num))
         self.frame_num = frame_num
@@ -93,7 +93,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
 
     data_loader = DataLoader(
         VideoTimeComparisonDataSet(
-            path_load=recursive_video_path_load(args.dataset_path, args.depth),
+            path_list=recursive_video_path_load(args.dataset_path, args.depth),
             interval_frame=0,
             random_crop_size=180
         ),

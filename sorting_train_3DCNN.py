@@ -49,13 +49,13 @@ json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w')
 train_loader = DataLoader(
     VideoSort3DCNNTrainDataSet(
         frame_num=frame_num,
-        path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
+        path_list=ucf101_train_path_load(args.dataset_path, args.train_label_path),
         cnn_frame_num=cnn3d_frame_num),
     batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(
     VideoSort3DCNNTrainDataSet(
         frame_num=frame_num,
-        path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
+        path_list=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
         cnn_frame_num=cnn3d_frame_num),
     batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)

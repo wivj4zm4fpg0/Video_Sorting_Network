@@ -30,9 +30,9 @@ def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):
 
 class VideoSort3DCNNTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
 
-    def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_load: list = None,
+    def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_list: list = None,
                  random_crop_size: int = 224, cnn_frame_num: int = 16):
-        super().__init__(pre_processing, frame_num, path_load, random_crop_size, frame_interval=0)
+        super().__init__(pre_processing, frame_num, path_list, random_crop_size, frame_interval=0)
         assert cnn_frame_num % frame_num == 0
         self.cnn_frame_num = cnn_frame_num
         self.crop_frame_len = cnn_frame_num * frame_num
@@ -101,7 +101,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
 
     data_loader = DataLoader(
         VideoSort3DCNNTrainDataSet(
-            path_load=recursive_video_path_load(args.dataset_path, args.depth),
+            path_list=recursive_video_path_load(args.dataset_path, args.depth),
             random_crop_size=180,
         ),
         batch_size=args.batch_size, shuffle=False

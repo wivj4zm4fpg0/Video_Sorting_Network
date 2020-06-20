@@ -53,7 +53,7 @@ json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w')
 train_loader = DataLoader(
     VideoSortingPerFrameTrainDataSet(
         frame_num=frame_num,
-        path_load=ucf101_train_path_load(args.dataset_path, args.train_label_path),
+        path_list=ucf101_train_path_load(args.dataset_path, args.train_label_path),
         interval_frame=frame_interval,
         sorting_start_index=sorting_start_index,
         sorting_end_index=sorting_end_index
@@ -62,7 +62,7 @@ train_loader = DataLoader(
 test_loader = DataLoader(
     VideoSortingPerFrameTrainDataSet(
         frame_num=frame_num,
-        path_load=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
+        path_list=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
         interval_frame=frame_interval,
         sorting_start_index=sorting_start_index,
         sorting_end_index=sorting_end_index

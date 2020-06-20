@@ -14,25 +14,11 @@ from torchvision.utils import make_grid
 from data_loader.video_train_loader import VideoTrainDataSet
 
 
-def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):
-    if data_list is None:
-        data_list = []
-    for file_name in os.listdir(input_dir):
-        file_name_path = os.path.join(input_dir, file_name)
-        if os.path.isfile(file_name_path):
-            continue
-        if depth > 0:
-            recursive_video_path_load(file_name_path, depth - 1, data_list)
-        else:
-            data_list.append((file_name_path, 0))  # 0はダミー
-    return data_list
-
-
 class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
 
-    def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_load: list = None,
+    def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_list: list = None,
                  random_crop_size: int = 224, frame_interval: int = 1):
-        super().__init__(pre_processing, frame_num, path_load, random_crop_size, frame_interval=frame_interval)
+        super().__init__(pre_processing, frame_num, path_list, random_crop_size, frame_interval=frame_interval)
         sort_seq = list(itertools.permutations(list(range(frame_num)), frame_num))
         self.shuffle_list = []
         for v in sort_seq:
@@ -78,6 +64,7 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
 if __name__ == '__main__':  # UCF101データセットの読み込みテストを行う
 
     import argparse
+    from data_loader.path_list_loader import recursive_video_path_load
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_path', type=str, required=True)
@@ -90,7 +77,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
 
     data_loader = DataLoader(
         VideoSortTrainDataSet(
-            path_load=recursive_video_path_load(args.dataset_path, args.depth),
+            path_list=recursive_video_path_load(args.dataset_path, args.depth),
             frame_interval=args.interval_frame,
             random_crop_size=180
         ),
