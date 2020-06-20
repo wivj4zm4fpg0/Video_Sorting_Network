@@ -66,7 +66,18 @@ test_iterate_len = len(test_loader)
 # 初期設定
 Net = r2plus1d_18(pretrained=args.use_pretrained_model)
 Net.fc = nn.Linear(512, args.class_num)
-nn.init.kaiming_normal_(Net.fc.weight)
+if not args.use_pretrained_model:
+    for module in Net.modules():
+        if hasattr(module, 'weight'):
+            if not ('Norm' in module.__class__.__name__):
+                nn.init.kaiming_uniform_(module.weight, mode='fan_out')
+            else:
+                nn.init.constant_(module.weight, 1)
+        if hasattr(module, 'bias'):
+            if module.bias is not None:
+                nn.init.constant_(module.bias, 0)
+else:
+    nn.init.kaiming_uniform_(Net.fc.weight)
 criterion = nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
