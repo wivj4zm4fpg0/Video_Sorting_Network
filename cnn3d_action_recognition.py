@@ -7,7 +7,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from models.resnet2p1d import generate_model
+from models.resnet_3d import generate_model
 from data_loader.path_list_loader import generate_path_list
 from data_loader.video_test_loader import VideoTestDataSet
 from data_loader.video_train_loader import VideoTrainDataSet
