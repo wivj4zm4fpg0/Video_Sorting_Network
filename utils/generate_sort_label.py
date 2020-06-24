@@ -18,10 +18,12 @@ shuffle_list = list(range(frame_num))
 for class_ in os.listdir(input_dir):
     class_path = os.path.join(input_dir, class_)
     for video in os.listdir(class_path):
+        print(f'{video = }')
         video_frame_num = len(os.listdir(os.path.join(class_path, video)))
+        assert crop_video_len < video_frame_num
         random.shuffle(shuffle_list)
         start_index = random.randint(0, video_frame_num - crop_video_len)
-        label = range(start_index, start_index + crop_video_len, frame_interval)
+        label = range(start_index, start_index + crop_video_len, frame_interval + 1)
         shuffle_label = list(range(frame_num))
         for i, v in enumerate(shuffle_list):
             shuffle_label[i] = label[v]
