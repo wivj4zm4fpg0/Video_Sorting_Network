@@ -25,11 +25,15 @@ def ucf101_sort_train_path_load(input_dir: str, input_label: str, train_label) -
     path_list = []
     input_csv = pd.read_csv(input_label, engine='python')
     name_list = list(input_csv['name'])
+    print(f'{len(train_list) = }')
+    print(f'{len(name_list) = }')
     count = 0
     for class_ in os.listdir(input_dir):
         class_path = os.path.join(input_dir, class_)
         for video in os.listdir(class_path):
-            if video not in name_list or video not in train_list:
+            # print(f'{video = }')
+            # if video not in name_list or video not in train_list:
+            if video not in train_list:
                 count += 1
                 continue
             video_path = os.path.join(class_path, video)
