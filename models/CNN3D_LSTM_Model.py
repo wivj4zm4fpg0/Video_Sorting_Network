@@ -21,9 +21,10 @@ class CNN3D_LSTM(nn.Module):
             batch_first = True
 
         resnet18_3d = generate_model(18)
-        checkpoint = torch.load(resnet_3d_pretrained_model)
-        resnet18_3d.fc = nn.Linear(512, 1039)
-        resnet18_3d.load_state_dict(checkpoint['state_dict'])
+        if pretrained:
+            checkpoint = torch.load(resnet_3d_pretrained_model)
+            resnet18_3d.fc = nn.Linear(512, 1039)
+            resnet18_3d.load_state_dict(checkpoint['state_dict'])
 
         # resnet18_3d_modules = [module for module in resnet18_3d.modules()][1:-1]
         # resnet18_3d_modules_cut = resnet18_3d_modules[0:4]
