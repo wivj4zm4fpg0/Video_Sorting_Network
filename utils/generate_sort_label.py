@@ -1,4 +1,5 @@
 import argparse
+import itertools
 import os
 import random
 
@@ -13,7 +14,21 @@ frame_num = args.frame_num
 frame_interval = args.frame_interval
 crop_video_len = (frame_num - 1) * frame_interval + frame_num
 output_txt = args.output_txt
-shuffle_list = list(range(frame_num))
+
+sort_seq = list(itertools.permutations(list(range(frame_num)), frame_num))
+shuffle_list = []
+for v in sort_seq:
+    v = list(v)
+    if v[::-1] in shuffle_list:
+        continue
+    shuffle_list.append(v)
+shuffle_len = len(shuffle_list)
+
+column = 'name'
+for i in range(frame_num):
+    column += f', label{i + 1}'
+with open(output_txt, mode='w') as f:
+    f.write(f'{column}\n')
 
 for class_ in os.listdir(input_dir):
     class_path = os.path.join(input_dir, class_)
@@ -21,11 +36,11 @@ for class_ in os.listdir(input_dir):
         print(f'{video = }')
         video_frame_num = len(os.listdir(os.path.join(class_path, video)))
         assert crop_video_len < video_frame_num
-        random.shuffle(shuffle_list)
         start_index = random.randint(0, video_frame_num - crop_video_len)
-        label = range(start_index, start_index + crop_video_len, frame_interval + 1)
+        frame_indices = range(start_index, start_index + crop_video_len, frame_interval + 1)
+        label = shuffle_list[random.randint(0, shuffle_len - 1)]
         shuffle_label = list(range(frame_num))
-        for i, v in enumerate(shuffle_list):
-            shuffle_label[i] = label[v]
+        for i, v in enumerate(label):
+            shuffle_label[i] = frame_indices[v]
         with open(output_txt, mode='a') as f:
             f.write(f'{video}, {str(shuffle_label)[1:-1]}\n')

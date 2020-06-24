@@ -1,9 +1,9 @@
-import itertools
 import os
 import random
 
 import cv2
 import numpy as np
+import pandas as pd
 import torch
 from PIL import Image
 from natsort import natsorted
@@ -14,36 +14,33 @@ from torchvision.utils import make_grid
 from data_loader.video_train_loader import VideoTrainDataSet
 
 
-class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
+def load_sort_label(input_dir: str, input_label: str):
+    path_list = []
+    input_csv = pd.read_csv(input_label, sep=', ', engine='python')
+    for class_ in os.listdir(input_dir):
+        class_path = os.path.join(input_dir, class_)
+        for video in os.listdir(class_path):
+            video_path = os.path.join(class_path, video)
+            label = str(input_csv.loc[input_csv.name == video, 'label1':].values[0])[1:-1].split(' ')
+            path_list.append((video_path, label))
+    return path_list
 
-    def __init__(self, pre_processing: transforms.Compose = None, frame_num = 4, path_list: list = None,
-                 random_crop_size = 224, frame_interval = 1):
+
+class VideoSortLabelTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
+
+    def __init__(self, pre_processing: transforms.Compose = None, frame_num=4, path_list: list = None,
+                 random_crop_size=224, frame_interval=1):
         super().__init__(pre_processing, frame_num, path_list, random_crop_size, frame_interval=frame_interval)
-        # a,b,c,dとd,c,b,aを同一とみなすことにしてn!/2の順列を作成
-        sort_seq = list(itertools.permutations(list(range(frame_num)), frame_num))
-        self.shuffle_list = []
-        for v in sort_seq:
-            v = list(v)
-            if v[::-1] in self.shuffle_list:
-                continue
-            self.shuffle_list.append(v)
-        self.shuffle_len = len(self.shuffle_list)
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
-
         nat_list = natsorted(os.listdir(self.data_list[index][0]))
         frame_list = [os.path.join(self.data_list[index][0], frame) for frame in nat_list]
         frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
         video_len = len(frame_list)
         assert self.crop_video_len < video_len
 
-        start_index = random.randint(0, video_len - self.crop_video_len)
-        frame_indices = list(range(video_len))[start_index:start_index + self.crop_video_len:self.frame_interval + 1]
-        shuffle_frame_indices = list(range(self.frame_num))
-        label = self.shuffle_list[random.randint(0, self.shuffle_len - 1)]
-        for i, v in enumerate(label):
-            shuffle_frame_indices[i] = frame_indices[v]
+        label = self.data_list[index][1]
 
         # transformsの設定
         # self.pre_processing.transforms[0].set_degree()  # RandomRotationの回転角度を設定
@@ -53,7 +50,7 @@ class VideoSortTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrain
         self.pre_processing.transforms[1].p = random.randint(0, 1)
 
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
-        video_tensor = [pre_processing(frame_list[int(i)]) for i in shuffle_frame_indices]
+        video_tensor = [pre_processing(frame_list[i]) for i in label]
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
 
         return video_tensor, torch.tensor(label)  # 入力画像とそのラベルをタプルとして返す
@@ -77,7 +74,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     args = parser.parse_args()
 
     data_loader = DataLoader(
-        VideoSortTrainDataSet(
+        VideoSortLabelTrainDataSet(
             path_list=recursive_video_path_load(args.dataset_path, args.depth),
             frame_interval=args.interval_frame,
             random_crop_size=180
