@@ -14,25 +14,21 @@ from torchvision.utils import make_grid
 from data_loader.video_train_loader import VideoTrainDataSet
 
 
-def ucf101_sort_train_path_load(input_dir: str, input_label: str, label_path: str) -> list:
-    ucf101_train_list = []
-    with open(label_path) as f:
-        label_path_list = [s.strip() for s in f.readlines()]
-        for label in label_path_list:
-            split_label = label.split(' ')
-            ucf101_train_list.append(split_label[0][:-4])
-
+def ucf101_sort_train_path_load(input_dir: str, input_label: str) -> list:
     path_list = []
     input_csv = pd.read_csv(input_label, engine='python')
+    name_list = list(input_csv['name'])
+    count = 0
     for class_ in os.listdir(input_dir):
         class_path = os.path.join(input_dir, class_)
         for video in os.listdir(class_path):
-            if video not in ucf101_train_list:
-                print(f'{video = }')
+            if video not in name_list:
+                count += 1
                 continue
             video_path = os.path.join(class_path, video)
             label = input_csv.loc[input_csv.name == video, 'label1':'order'].values[0]
             path_list.append((video_path, label[:-1], label[-1]))
+    print(f'{count = }')
     return path_list
 
 

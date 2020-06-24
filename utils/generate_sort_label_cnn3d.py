@@ -31,12 +31,16 @@ for i in range(frame_num):
 with open(output_txt, mode='w') as f:
     f.write(f'{column},order\n')
 
+count = 0
 for class_ in os.listdir(input_dir):
     class_path = os.path.join(input_dir, class_)
     for video in os.listdir(class_path):
         print(f'{video = }')
         video_frame_num = len(os.listdir(os.path.join(class_path, video)))
-        assert crop_video_len < video_frame_num
+        if crop_video_len < video_frame_num:
+            print(f'{count = }')
+            count += 1
+            continue
         start_index = random.randint(0, video_frame_num - crop_video_len)
         frame_indices = list(range(video_frame_num))[start_index:start_index + crop_video_len:cnn3d_frame_num]
         frame_indices = [list(range(frame_index, frame_index + cnn3d_frame_num + 1)) for frame_index in frame_indices]
