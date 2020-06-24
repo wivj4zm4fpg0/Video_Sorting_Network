@@ -49,7 +49,8 @@ class VideoSort3DCNNComparisonTrainDataSet(VideoTrainDataSet):  # video_train_lo
 
         start_index = random.randint(0, video_len - self.cnn_frame_num)
         frame_indices = list(range(video_len))[start_index:start_index + self.cnn_frame_num]
-        shuffle_indices = [list(range(i,i + self.frame_num)) for i in list(range(self.cnn_frame_num))[0:-1:self.frame_num]]
+        shuffle_indices = [list(range(i, i + self.frame_num)) for i in
+                           list(range(self.cnn_frame_num))[0:-1:self.frame_num]]
         random.shuffle(shuffle_indices)
 
         # transformsの設定

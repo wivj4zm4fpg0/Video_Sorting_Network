@@ -6,10 +6,8 @@ from time import time
 import torch
 from torch.utils.data import DataLoader
 
+from data_loader.video_sort_label_3dcnn_train_loader import ucf101_sort_train_path_load, VideoSortLabel3DCNNTrainDataSet
 from models.CNN3D_LSTM_Model import CNN3D_LSTM
-from data_loader.video_sort_label_3dcnn_train_loader import VideoSortLabel3DCNNTrainDataSet
-from data_loader.video_test_loader import ucf101_test_path_load
-from data_loader.video_train_loader import ucf101_train_path_load
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()
@@ -24,21 +22,18 @@ parser.add_argument('--use_bidirectional', action='store_true')
 parser.add_argument('--learning_rate', type=float, default=0.001, required=False)
 parser.add_argument('--model_save_path', type=str, required=False)
 parser.add_argument('--model_load_path', type=str, required=False)
-# parser.add_argument('--depth', type=int, default=2, required=False)
 parser.add_argument('--model_save_interval', type=int, default=50, required=False)
 parser.add_argument('--train_label_path', type=str, required=True)
-parser.add_argument('--test_label_path', type=str, required=True)
-parser.add_argument('--class_path', type=str, required=True)
+parser.add_argument('--sort_label_path', type=str, required=True)
 parser.add_argument('--no_reset_log_file', action='store_true')
 parser.add_argument('--load_epoch_num', action='store_true')
-parser.add_argument('--cnn3d_frame_num', type=int, default=16, required=False)
+parser.add_argument('--cnn3d_frame_num', type=int, default=8, required=False)
 
 args = parser.parse_args()
 batch_size = args.batch_size
 frame_num = args.frame_num
 cnn3d_frame_num = args.cnn3d_frame_num
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
-log_test_path = os.path.join(args.output_dir, 'log_test.csv')
 os.makedirs(args.output_dir, exist_ok=True)
 if not args.model_save_path:
     args.model_save_path = os.path.join(args.output_dir, 'model.pth')
@@ -49,17 +44,10 @@ json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w')
 train_loader = DataLoader(
     VideoSortLabel3DCNNTrainDataSet(
         frame_num=frame_num,
-        path_list=ucf101_train_path_load(args.dataset_path, args.train_label_path),
+        path_list=ucf101_sort_train_path_load(args.dataset_path, args.sort_label_path, args.train_label_path),
         cnn_frame_num=cnn3d_frame_num),
     batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(
-    VideoSortLabel3DCNNTrainDataSet(
-        frame_num=frame_num,
-        path_list=ucf101_test_path_load(args.dataset_path, args.test_label_path, args.class_path),
-        cnn_frame_num=cnn3d_frame_num),
-    batch_size=batch_size, shuffle=False)
 train_iterate_len = len(train_loader)
-test_iterate_len = len(test_loader)
 
 # 初期設定
 # resnet18を取得
@@ -71,8 +59,6 @@ current_epoch = 0
 # ログファイルの生成
 if not args.no_reset_log_file:
     with open(log_train_path, mode='w') as f:
-        f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
-    with open(log_test_path, mode='w') as f:
         f.write('epoch,loss,full_fit_accuracy,per_fit_accuracy,time,learning_rate\n')
 
 # CUDA環境の有無で処理を変更
@@ -137,19 +123,6 @@ def train(inputs, labels):
     return outputs, loss.item()
 
 
-# VideoDataTestDataSetの出力は(フレーム，ラベル)である．
-# テストを行う
-def test(inputs, labels):
-    with torch.no_grad():  # 勾配計算が行われないようにする
-        # labels = torch.tensor(inputs[1])
-        outputs = Net(inputs)  # この記述方法で順伝搬が行われる
-        # loss = criterion(outputs.permute(1, 2, 0), labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = False
-        loss = criterion(outputs.permute(1, 2, 0), labels)  # Loss値を計算 batch_first = False
-        # loss = criterion(outputs, labels)  # Loss値を計算 batch_first = True
-        # loss = criterion(outputs, labels) + inner_product_loss(outputs)  # Loss値を計算 batch_first = True
-    return outputs, loss.item()
-
-
 # 推論を行う
 def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, log_file: str, iterate_len: int):
     epoch_loss = 0
@@ -196,8 +169,6 @@ try:
         current_epoch = epoch
         Net.train()
         estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
-        Net.eval()
-        estimate(test_loader, test, 'test', epoch, log_test_path, test_iterate_len)
 except KeyboardInterrupt:  # Ctrl-Cで保存．
     if args.model_save_path:
         torch.save({
