@@ -19,6 +19,7 @@ def ucf101_sort_train_path_load(input_dir: str, input_label: str, train_label) -
     with open(train_label) as f:
         label_path_list = [s.strip() for s in f.readlines()]
         for label in label_path_list:
+            label = os.path.basename(label)
             split_label = label.split(' ')
             train_list.append(split_label[0][:-4])
 
