@@ -37,7 +37,7 @@ for class_ in os.listdir(input_dir):
     for video in os.listdir(class_path):
         print(f'{video = }')
         video_frame_num = len(os.listdir(os.path.join(class_path, video)))
-        if crop_video_len < video_frame_num:
+        if crop_video_len <= video_frame_num:
             print(f'{count = }')
             count += 1
             continue
