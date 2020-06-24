@@ -38,7 +38,6 @@ for class_ in os.listdir(input_dir):
         print(f'{video = }')
         video_frame_num = len(os.listdir(os.path.join(class_path, video)))
         if crop_video_len > video_frame_num:
-            print(f'{count = }')
             count += 1
             continue
         start_index = random.randint(0, video_frame_num - crop_video_len)
@@ -54,3 +53,4 @@ for class_ in os.listdir(input_dir):
         order = re.sub(', ', '_', str(label)[1:-1])
         with open(output_txt, mode='a') as f:
             f.write(f'{video},{label_str[:-1]},{order}\n')
+print(f'{count = }')
