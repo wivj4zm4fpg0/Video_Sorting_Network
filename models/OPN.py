@@ -37,7 +37,8 @@ class OPN(nn.Module):
         class_num = math.factorial(frame_num) // 2
         self.combination_list = list(itertools.combinations(list(range(frame_num)), 2))
         self.comb_fc2 = nn.Linear(512 * len(self.combination_list), class_num)
-        nn.init.kaiming_normal_(self.comb_fc1.weight)
+        nn.init.kaiming_normal_(self.cnn_last[0].weight)
+        nn.init.kaiming_normal_(self.comb_fc1[0].weight)
         nn.init.kaiming_normal_(self.comb_fc2.weight)
 
     # xの形は(バッチサイズ, RNNへの入力数, チャンネル数, 解像度, 解像度)の5次元配列である必要がある
