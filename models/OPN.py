@@ -29,7 +29,8 @@ class OPN(nn.Module):
 
         comb_fc1_out = 512
         self.comb_fc1 = nn.Sequential(
-            nn.Linear(cnn_last_dim * 2, comb_fc1_out),
+            # nn.Linear(cnn_last_dim * 2, comb_fc1_out),
+            nn.Linear(resnet18_last_dim * 2, comb_fc1_out),
             nn.BatchNorm1d(comb_fc1_out),
             nn.ReLU(inplace=True),
             nn.Dropout()
