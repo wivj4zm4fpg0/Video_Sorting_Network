@@ -25,7 +25,7 @@ class VideoTrainDataSet(Dataset):  # torch.utils.data.Datasetを継承
         else:
             self.pre_processing = transforms.Compose([
                 # VideoRandomRotation(0),
-                VideoRandomCrop(random_crop_size),
+                # VideoRandomCrop(random_crop_size),
                 transforms.RandomHorizontalFlip(),  # ランダムで左右回転
                 transforms.ToTensor(),  # Tensor型へ変換
                 transforms.Normalize((0, 0, 0), (1, 1, 1))  # 画素値が0と1の間になるように正規化
@@ -40,9 +40,9 @@ class VideoTrainDataSet(Dataset):  # torch.utils.data.Datasetを継承
 
         # self.pre_processing.transforms[0].set_degree()  # RandomRotationの回転角度を設定
         # RandomCropの設定を行う. 引数に画像サイズが必要なので最初のフレームを渡す
-        self.pre_processing.transforms[0].set_param(Image.open(frame_list[0]))
+        # self.pre_processing.transforms[0].set_param(Image.open(frame_list[0]))
         # RandomHorizontalFlipのソースコード参照．pの値を設定．0なら反転しない，1なら反転する
-        self.pre_processing.transforms[1].p = randint(0, 1)
+        self.pre_processing.transforms[0].p = randint(0, 1)
 
         return frame_list, video_len
 

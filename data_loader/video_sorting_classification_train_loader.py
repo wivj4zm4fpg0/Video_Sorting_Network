@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 import torch
 from PIL import Image
-from natsort import natsorted
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.utils import make_grid
@@ -44,10 +43,7 @@ class VideoSortingClassificationTrainDataSet(VideoTrainDataSet):  # video_train_
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
-        nat_list = natsorted(os.listdir(self.data_list[index][0]))
-        frame_list = [os.path.join(self.data_list[index][0], frame) for frame in nat_list]
-        frame_list = [frame for frame in frame_list if '.jpg' in frame or '.png' in frame]
-        video_len = len(frame_list)
+        frame_list, video_len = self.getitem_init(index)
         assert self.crop_video_len < video_len
 
         start_index = random.randint(0, video_len - self.crop_video_len)
@@ -58,13 +54,6 @@ class VideoSortingClassificationTrainDataSet(VideoTrainDataSet):  # video_train_
         shuffle_list = self.shuffle_list[label]
         for i, v in enumerate(shuffle_list):
             shuffle_frame_indices[i] = frame_indices[v]
-
-        # transformsの設定
-        # self.pre_processing.transforms[0].set_degree()  # RandomRotationの回転角度を設定
-        # RandomCropの設定を行う. 引数に画像サイズが必要なので最初のフレームを渡す
-        self.pre_processing.transforms[0].set_param(Image.open(frame_list[0]))
-        # RandomHorizontalFlipのソースコード参照．pの値を設定．0なら反転しない，1なら反転する
-        self.pre_processing.transforms[1].p = random.randint(0, 1)
 
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
         video_tensor = [pre_processing(frame_list[i]) for i in shuffle_frame_indices]

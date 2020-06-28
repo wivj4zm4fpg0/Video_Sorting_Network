@@ -9,8 +9,7 @@ from torch.utils.data import DataLoader
 
 from models.OPN import OPN
 from data_loader.video_sorting_classification_train_loader import VideoSortingClassificationTrainDataSet
-from data_loader.video_test_loader import ucf101_test_path_load
-from data_loader.video_train_loader import ucf101_train_path_load
+from data_loader.path_list_loader import ucf101_test_path_load, ucf101_train_path_load
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()
