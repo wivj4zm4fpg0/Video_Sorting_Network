@@ -45,7 +45,8 @@ class OPN(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         sequence_length = x.shape[1]
         x = x.permute(1, 0, 2, 3, 4)  # (batch_size, seq_len, img) -> (seq_len, batch_size, img)
-        x = torch.stack([self.cnn_last(torch.flatten(self.resnet18(x[i]), 1)) for i in range(sequence_length)])
+        # x = torch.stack([self.cnn_last(torch.flatten(self.resnet18(x[i]), 1)) for i in range(sequence_length)])
+        x = torch.stack([torch.flatten(self.resnet18(x[i]), 1) for i in range(sequence_length)])
         comb_feat_list = []
         for comb in self.combination_list:
             comb_feat_list.append(self.comb_fc1(torch.cat([x[comb[0]], x[comb[1]]], 1)))
