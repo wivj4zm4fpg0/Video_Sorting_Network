@@ -5,7 +5,7 @@ import random
 import cv2
 import numpy as np
 import torch
-from PIL import Image
+from PIL import Image, ImageDraw
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.utils import make_grid
@@ -36,6 +36,7 @@ class VideoSortingClassificationMatTrainDataSet(VideoTrainDataSet):  # video_tra
                 continue
             self.shuffle_list.append(v)
         self.shuffle_len = len(self.shuffle_list)
+        self.random_crop_size = random_crop_size
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
@@ -43,6 +44,7 @@ class VideoSortingClassificationMatTrainDataSet(VideoTrainDataSet):  # video_tra
         assert self.crop_video_len < video_len
 
         frame_indices = self.data_list[index][1]
+        crop = self.data_list[index][2]
 
         shuffle_frame_indices = list(range(self.frame_num))
         label = random.randint(0, self.shuffle_len - 1)
@@ -50,14 +52,19 @@ class VideoSortingClassificationMatTrainDataSet(VideoTrainDataSet):  # video_tra
         for i, v in enumerate(shuffle_list):
             shuffle_frame_indices[i] = frame_indices[v] // 2
 
-        pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
-        video_tensor = [pre_processing(frame_list[i]) for i in shuffle_frame_indices]
+        video_tensor = [self.pre_processing(self.draw_bounding_box(Image.open([i]).convert('RGB'), crop)) for i in
+                        shuffle_frame_indices]
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
 
         return video_tensor, torch.tensor(label)  # 入力画像とそのラベルをタプルとして返す
 
     def __len__(self) -> int:  # データセットの数を返すようにする
         return len(self.data_list)
+
+    def draw_bounding_box(self, img: Image, crop: list):
+        draw = ImageDraw.Draw(img)
+        draw.rectangle(crop[0], crop[1], crop[0] + self.random_crop_size, crop[1] + self.random_crop_size)
+        return draw
 
 
 if __name__ == '__main__':  # UCF101データセットの読み込みテストを行う
@@ -85,6 +92,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
         cv2.moveWindow('image', 30, 50)
         if cv2.waitKey(0) & 0xFF == ord('q'):
             exit(0)
+
 
     print(f'{data_loader.dataset.shuffle_list = }')
 
