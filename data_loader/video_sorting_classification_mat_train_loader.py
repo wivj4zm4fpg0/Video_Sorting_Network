@@ -48,7 +48,7 @@ class VideoSortingClassificationMatTrainDataSet(VideoTrainDataSet):  # video_tra
         label = random.randint(0, self.shuffle_len - 1)
         shuffle_list = self.shuffle_list[label]
         for i, v in enumerate(shuffle_list):
-            shuffle_frame_indices[i] = frame_indices[v]
+            shuffle_frame_indices[i] = frame_indices[v] // 2
 
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
         video_tensor = [pre_processing(frame_list[i]) for i in shuffle_frame_indices]
