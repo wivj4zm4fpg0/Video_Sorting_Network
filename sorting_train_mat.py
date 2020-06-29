@@ -39,7 +39,7 @@ json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w')
 train_loader = DataLoader(
     VideoSortingClassificationMatTrainDataSet(
         frame_num=4,
-        path_list=mat_loader(args.input_dri, args.input_mat)),
+        path_list=mat_loader(args.input_dir, args.input_mat)),
     batch_size=batch_size, shuffle=True)
 train_iterate_len = len(train_loader)
 
