@@ -66,8 +66,8 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_dir', type=str, required=True)
-    parser.add_argument('--batch_size', type=int, default=3, required=False)
-    parser.add_argument('--input_mat', type=int, default=1, required=False)
+    parser.add_argument('--batch_size', type=int, default=4, required=False)
+    parser.add_argument('--input_mat', type=str, required=False)
 
     args = parser.parse_args()
 
