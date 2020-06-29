@@ -15,6 +15,6 @@ for filename in mat['filename']:
     basename = os.path.basename(filename)
     for i, v in enumerate(os.listdir(os.path.join(input_dir, 'RGB'))):
         if basename.lower() == v.lower() and basename != v:
-            command = f'mv {os.path.join(input_dir, "RGB", v)}, {os.path.join(path)}'
+            command = f'mv {os.path.join(input_dir, "RGB", v)} {os.path.join(path)}'
             print(command)
             os.system(command)
