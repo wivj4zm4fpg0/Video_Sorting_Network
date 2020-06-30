@@ -30,7 +30,7 @@ def recursive_video_path_load(input_dir: str, depth: int = 2, data_list=None):
 class VideoSortingClassificationTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
 
     def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_list: list = None,
-                 random_crop_size: int = 224, frame_interval: int = 4):
+                 random_crop_size: int = 224, frame_interval: int = 5):
         super().__init__(pre_processing, frame_num, path_list, random_crop_size, frame_interval=frame_interval)
         sort_seq = list(itertools.permutations(list(range(frame_num)), frame_num))
         self.shuffle_list = []
@@ -52,6 +52,9 @@ class VideoSortingClassificationTrainDataSet(VideoTrainDataSet):  # video_train_
         shuffle_frame_indices = list(range(self.frame_num))
         label = random.randint(0, self.shuffle_len - 1)
         shuffle_list = self.shuffle_list[label]
+        reverse = random.randint(0, 1)
+        if reverse == 1:
+            shuffle_list.reverse()
         for i, v in enumerate(shuffle_list):
             shuffle_frame_indices[i] = frame_indices[v]
 
@@ -74,7 +77,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     parser.add_argument('--batch_size', type=int, default=3, required=False)
     parser.add_argument('--depth', type=int, default=1, required=False)
     parser.add_argument('--frame_num', type=int, default=4, required=False)
-    parser.add_argument('--interval_frame', type=int, default=0, required=False)
+    parser.add_argument('--interval_frame', type=int, default=5, required=False)
 
     args = parser.parse_args()
 

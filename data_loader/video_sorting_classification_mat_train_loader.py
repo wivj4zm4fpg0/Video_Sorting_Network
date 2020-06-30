@@ -19,14 +19,14 @@ def mat_loader(input_dir, input_mat):
     path_list = []
     mat = scipy.io.loadmat(input_mat, squeeze_me=True)
     for i in range(len(mat['filename'])):
-        path_list.append((os.path.join(input_dir, mat['filename'][i]), mat['frame'][i]))
+        path_list.append((os.path.join(input_dir, mat['filename'][i]), mat['frame'][i], mat['crop'][i]))
     return path_list
 
 
 class VideoSortingClassificationMatTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTrainDataSetを継承
 
     def __init__(self, pre_processing: transforms.Compose = None, frame_num: int = 4, path_list: list = None,
-                 random_crop_size: int = 224, frame_interval: int = 4):
+                 random_crop_size: int = 112, frame_interval: int = 4):
         super().__init__(pre_processing, frame_num, path_list, random_crop_size, frame_interval=frame_interval)
         sort_seq = list(itertools.permutations(list(range(frame_num)), frame_num))
         self.shuffle_list = []
@@ -49,11 +49,14 @@ class VideoSortingClassificationMatTrainDataSet(VideoTrainDataSet):  # video_tra
         shuffle_frame_indices = list(range(self.frame_num))
         label = random.randint(0, self.shuffle_len - 1)
         shuffle_list = self.shuffle_list[label]
+        reverse = random.randint(0, 1)
+        if reverse == 1:
+            shuffle_list.reverse()
         for i, v in enumerate(shuffle_list):
-            shuffle_frame_indices[i] = frame_indices[v] // 2
+            shuffle_frame_indices[i] = frame_indices[v]//2
 
-        video_tensor = [self.pre_processing(self.draw_bounding_box(Image.open([i]).convert('RGB'), crop)) for i in
-                        shuffle_frame_indices]
+        video_tensor = [self.pre_processing(self.draw_bounding_box(Image.open(frame_list[i]).convert('RGB'), crop))
+                        for i in shuffle_frame_indices]
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
 
         return video_tensor, torch.tensor(label)  # 入力画像とそのラベルをタプルとして返す
@@ -63,8 +66,8 @@ class VideoSortingClassificationMatTrainDataSet(VideoTrainDataSet):  # video_tra
 
     def draw_bounding_box(self, img: Image, crop: list):
         draw = ImageDraw.Draw(img)
-        draw.rectangle(crop[0], crop[1], crop[0] + self.random_crop_size, crop[1] + self.random_crop_size)
-        return draw
+        draw.rectangle((crop[1], crop[0], crop[1] + self.random_crop_size, crop[0] + self.random_crop_size))
+        return img
 
 
 if __name__ == '__main__':  # UCF101データセットの読み込みテストを行う
@@ -82,7 +85,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
         VideoSortingClassificationMatTrainDataSet(
             path_list=mat_loader(args.input_dir, args.input_mat),
         ),
-        batch_size=args.batch_size, shuffle=False
+        batch_size=args.batch_size, shuffle=True
     )
 
 
