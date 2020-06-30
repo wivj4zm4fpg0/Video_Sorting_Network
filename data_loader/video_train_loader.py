@@ -13,7 +13,7 @@ from data_loader.video_transforms import VideoRandomCrop
 class VideoTrainDataSet(Dataset):  # torch.utils.data.Datasetを継承
 
     def __init__(self, pre_processing: transforms.Compose = None, frame_num=4, path_list: list = None,
-                 random_crop_size=224, frame_interval=0):
+                 random_crop_size=224, frame_interval=4):
 
         self.crop_video_len = (frame_num - 1) * frame_interval + frame_num
         self.frame_num = frame_num
@@ -77,7 +77,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_path', type=str, required=True)
     parser.add_argument('--batch_size', type=int, default=8, required=False)
-    parser.add_argument('--frame_interval', type=int, default=0, required=False)
+    parser.add_argument('--frame_interval', type=int, default=4, required=False)
 
     args = parser.parse_args()
 
