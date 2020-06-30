@@ -147,13 +147,7 @@ try:
         Net.train()
         estimate(train_loader, train, 'train', epoch, log_train_path, train_iterate_len)
 except KeyboardInterrupt:  # Ctrl-Cで保存．
-    torch.save({
-        'epoch': current_epoch,
-        'model_state_dict': Net.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-    }, model_save_path)
-    print('complete save model')
-    exit(0)
+    pass
 
 torch.save({
     'epoch': args.epoch_num,
