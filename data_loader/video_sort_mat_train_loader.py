@@ -1,4 +1,3 @@
-import itertools
 import os
 import random
 
@@ -28,14 +27,14 @@ class VideoSortMatTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTr
                  random_crop_size=224, frame_interval=1):
         super().__init__(pre_processing, frame_num, path_list, random_crop_size, frame_interval=frame_interval)
         # a,b,c,dとd,c,b,aを同一とみなすことにしてn!/2の順列を作成
-        sort_seq = list(itertools.permutations(list(range(frame_num)), frame_num))
-        self.shuffle_list = []
-        for v in sort_seq:
-            v = list(v)
-            if v[::-1] in self.shuffle_list:
-                continue
-            self.shuffle_list.append(v)
-        self.shuffle_len = len(self.shuffle_list)
+        # sort_seq = list(itertools.permutations(list(range(frame_num)), frame_num))
+        # self.shuffle_list = []
+        # for v in sort_seq:
+        #     v = list(v)
+        #     if v[::-1] in self.shuffle_list:
+        #         continue
+        #     self.shuffle_list.append(v)
+        # self.shuffle_len = len(self.shuffle_list)
         self.shuffle_list = list(range(len(self.data_list[0][1])))
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
