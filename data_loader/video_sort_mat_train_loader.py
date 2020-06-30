@@ -1,5 +1,7 @@
+import itertools
 import os
 import random
+import copy
 
 import cv2
 import numpy as np
@@ -27,15 +29,15 @@ class VideoSortMatTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTr
                  random_crop_size=224, frame_interval=1):
         super().__init__(pre_processing, frame_num, path_list, random_crop_size, frame_interval=frame_interval)
         # a,b,c,dとd,c,b,aを同一とみなすことにしてn!/2の順列を作成
-        # sort_seq = list(itertools.permutations(list(range(frame_num)), frame_num))
-        # self.shuffle_list = []
-        # for v in sort_seq:
-        #     v = list(v)
-        #     if v[::-1] in self.shuffle_list:
-        #         continue
-        #     self.shuffle_list.append(v)
-        # self.shuffle_len = len(self.shuffle_list)
-        self.shuffle_list = list(range(len(self.data_list[0][1])))
+        sort_seq = list(itertools.permutations(list(range(len(self.data_list[0][1]))), len(self.data_list[0][1])))
+        self.shuffle_list = []
+        for v in sort_seq:
+            v = list(v)
+            if v[::-1] in self.shuffle_list:
+                continue
+            self.shuffle_list.append(v)
+        self.shuffle_len = len(self.shuffle_list)
+        # self.shuffle_list = list(range(len(self.data_list[0][1])))
 
     # イテレートするときに実行されるメソッド．ここをオーバーライドする必要がある．
     def __getitem__(self, index: int) -> tuple:
@@ -45,16 +47,26 @@ class VideoSortMatTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTr
 
         frame_indices = self.data_list[index][1]
 
+        # shuffle_frame_indices = list(range(len(frame_indices)))
+        # random.shuffle(self.shuffle_list)
+        # for i, v in enumerate(self.shuffle_list):
+        #     shuffle_frame_indices[i] = frame_indices[v] - 1
+
         shuffle_frame_indices = list(range(len(frame_indices)))
-        random.shuffle(self.shuffle_list)
-        for i, v in enumerate(self.shuffle_list):
+        labels = self.shuffle_list[random.randint(0, self.shuffle_len - 1)]
+        frame_labels = copy.copy(labels)
+        reverse = random.randint(0, 1)
+        if reverse == 1:
+            frame_labels.reverse()
+        for i, v in enumerate(frame_labels):
             shuffle_frame_indices[i] = frame_indices[v] - 1
 
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
         video_tensor = [pre_processing(frame_list[int(i)]) for i in shuffle_frame_indices]
         video_tensor = torch.stack(video_tensor)  # 3次元Tensorを含んだList -> 4次元Tensorに変換
 
-        return video_tensor, torch.tensor(self.shuffle_list)  # 入力画像とそのラベルをタプルとして返す
+        # return video_tensor, torch.tensor(self.shuffle_list)  # 入力画像とそのラベルをタプルとして返す
+        return video_tensor, torch.tensor(labels)  # 入力画像とそのラベルをタプルとして返す
 
     def __len__(self) -> int:  # データセットの数を返すようにする
         return len(self.data_list)
@@ -63,24 +75,19 @@ class VideoSortMatTrainDataSet(VideoTrainDataSet):  # video_train_loader.VideoTr
 if __name__ == '__main__':  # UCF101データセットの読み込みテストを行う
 
     import argparse
-    from data_loader.path_list_loader import recursive_video_path_load
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset_path', type=str, required=True)
+    parser.add_argument('--input_dir', type=str, required=True)
+    parser.add_argument('--input_mat', type=str, required=True)
     parser.add_argument('--batch_size', type=int, default=3, required=False)
-    parser.add_argument('--depth', type=int, default=1, required=False)
-    parser.add_argument('--frame_num', type=int, default=4, required=False)
-    parser.add_argument('--interval_frame', type=int, default=1, required=False)
 
     args = parser.parse_args()
 
     data_loader = DataLoader(
         VideoSortMatTrainDataSet(
-            path_list=recursive_video_path_load(args.dataset_path, args.depth),
-            frame_interval=args.interval_frame,
-            random_crop_size=180
+            path_list=mat_loader(args.input_dir, args.input_mat),
         ),
-        batch_size=args.batch_size, shuffle=False
+        batch_size=args.batch_size, shuffle=True
     )
 
 
