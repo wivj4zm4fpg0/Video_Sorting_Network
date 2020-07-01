@@ -1,7 +1,7 @@
+import copy
 import itertools
 import os
 import random
-import copy
 
 import cv2
 import numpy as np
