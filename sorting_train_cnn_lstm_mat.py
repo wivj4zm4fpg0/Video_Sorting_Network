@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from data_loader.video_sort_mat_train_loader import mat_loader, VideoSortMatTrainDataSet
-from models.CNN_LSTM_Model import CNN_LSTM
+from models.CNN_RNN_Model import CNN_RNN
 
 # コマンドライン引数を処理
 parser = argparse.ArgumentParser()
@@ -42,7 +42,7 @@ train_iterate_len = len(train_loader)
 
 # 初期設定
 # resnet18を取得
-Net = CNN_LSTM(frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
+Net = CNN_RNN(frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
 criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
@@ -150,7 +150,7 @@ except KeyboardInterrupt:  # Ctrl-Cで保存．
     pass
 
 torch.save({
-    'epoch': args.epoch_num,
+    'epoch': current_epoch,
     'model_state_dict': Net.state_dict(),
     'optimizer_state_dict': optimizer.state_dict(),
 }, model_save_path)

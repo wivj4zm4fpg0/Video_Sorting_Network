@@ -4,7 +4,7 @@ from torchvision.models import resnet18
 from torchvision.models.resnet import BasicBlock
 
 
-class CNN_LSTM(nn.Module):
+class CNN_RNN(nn.Module):
     def __init__(self, class_num: int = 101, bidirectional: bool = True, pretrained: bool = True):
         super().__init__()
 
@@ -39,7 +39,7 @@ class CNN_LSTM(nn.Module):
 
 
 if __name__ == '__main__':
-    model = CNN_LSTM()
+    model = CNN_RNN()
     input = torch.randn(2, 4, 3, 256, 256)
     output = model(input)
     print(f'output.shape = {output.shape}')

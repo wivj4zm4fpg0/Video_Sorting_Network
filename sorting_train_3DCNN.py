@@ -6,7 +6,7 @@ from time import time
 import torch
 from torch.utils.data import DataLoader
 
-from models.CNN3D_LSTM_Model import CNN3D_LSTM
+from models.CNN3D_RNN_Model import CNN3dRNN
 from data_loader.video_sort_label_3dcnn_train_loader import VideoSortLabel3DCNNTrainDataSet
 from data_loader.video_test_loader import ucf101_test_path_load
 from data_loader.video_train_loader import ucf101_train_path_load
@@ -63,7 +63,7 @@ test_iterate_len = len(test_loader)
 
 # 初期設定
 # resnet18を取得
-Net = CNN3D_LSTM(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
+Net = CNN3dRNN(args.frame_num, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
 criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
