@@ -27,18 +27,19 @@ with open(output_csv, mode='w') as f:
     for class_ in os.listdir(input_dir):
         class_path = os.path.join(input_dir, class_)
         for video in os.listdir(class_path):
-            print(f'{video = }')
             video_path = os.path.join(class_path, video)
             video_len = len(os.listdir(video_path))
-            print(f'{video_len = }')
-            subtracted_frame = video_len - crop_video_len
+            split_num = video_len // crop_video_len * split_num
+            if split_num > sort_len:
+                split_num = sort_len
+            subtracted_frame = video_len - crop_video_len * split_num
             interval_frame = subtracted_frame // (clip_num + 1)
             frame_indices = list(range(video_len))
-            extracted_frames = frame_indices[interval_frame:interval_frame * clip_num + crop_video_len * (
-                    clip_num - 1) + 1:interval_frame + crop_video_len]
+            extracted_frames = frame_indices[interval_frame:interval_frame * split_num + crop_video_len * (
+                    split_num - 1) + 1:interval_frame + crop_video_len]
             extracted_frame_indices = [list(range(v, v + crop_video_len)) for v in extracted_frames]
-            sort_list = [extracted_frame_indices[i][cnn3d_frame_num * j:cnn3d_frame_num * (j + 1) - 1] for j in
-                         range(sort_len) for i in range(clip_num)]
+            sort_list = [extracted_frame_indices[i][cnn3d_frame_num * j:cnn3d_frame_num * (j + 1)] for j in
+                         range(clip_num) for i in range(split_num)]
             for clips in sort_list:
                 for order in labels:
                     label_list = []
