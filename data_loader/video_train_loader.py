@@ -42,7 +42,8 @@ class VideoTrainDataSet(Dataset):  # torch.utils.data.Datasetを継承
         # RandomCropの設定を行う. 引数に画像サイズが必要なので最初のフレームを渡す
         # self.pre_processing.transforms[0].set_param(Image.open(frame_list[0]))
         # RandomHorizontalFlipのソースコード参照．pの値を設定．0なら反転しない，1なら反転する
-        self.pre_processing.transforms[0].p = randint(0, 1)
+        # self.pre_processing.transforms[0].p = randint(0, 1)
+        self.pre_processing.transforms[0].p = 0
 
         return frame_list, video_len
 
