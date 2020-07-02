@@ -29,7 +29,7 @@ with open(output_csv, mode='w') as f:
         for video in os.listdir(class_path):
             video_path = os.path.join(class_path, video)
             video_len = len(os.listdir(video_path))
-            split_num = video_len // crop_video_len * split_num
+            split_num = video_len // crop_video_len
             if split_num > sort_len:
                 split_num = sort_len
             subtracted_frame = video_len - crop_video_len * split_num
