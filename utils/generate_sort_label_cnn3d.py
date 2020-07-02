@@ -38,8 +38,14 @@ with open(output_csv, mode='w') as f:
             extracted_frames = frame_indices[interval_frame:interval_frame * split_num + crop_video_len * (
                     split_num - 1) + 1:interval_frame + crop_video_len]
             extracted_frame_indices = [list(range(v, v + crop_video_len)) for v in extracted_frames]
-            sort_list = [extracted_frame_indices[i][cnn3d_frame_num * j:cnn3d_frame_num * (j + 1)] for j in
-                         range(clip_num) for i in range(split_num)]
+            # sort_list = [extracted_frame_indices[i][cnn3d_frame_num * j:cnn3d_frame_num * (j + 1)] for j in
+            #              range(clip_num) for i in range(split_num)]
+            sort_list = []
+            for i in range(split_num):
+                clip_list = []
+                for j in range(clip_num):
+                    clip_list.append(extracted_frame_indices[i][cnn3d_frame_num * j:cnn3d_frame_num * (j + 1)])
+                sort_list.append(clip_list)
             for clips in sort_list:
                 for order in labels:
                     label_list = []
