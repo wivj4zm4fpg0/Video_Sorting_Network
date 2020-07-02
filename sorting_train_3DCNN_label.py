@@ -31,8 +31,6 @@ cnn3d_frame_num = args.cnn3d_frame_num
 log_train_path = os.path.join(args.output_dir, 'log_train.csv')
 model_save_path = os.path.join(args.output_dir, 'model.pth')
 os.makedirs(args.output_dir, exist_ok=True)
-if not args.model_save_path:
-    args.model_save_path = os.path.join(args.output_dir, 'model.pth')
 json.dump(vars(args), open(os.path.join(args.output_dir, 'args.json'), mode='w'),
           ensure_ascii=False, indent=4, sort_keys=True, separators=(',', ': '))
 
