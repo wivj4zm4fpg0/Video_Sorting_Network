@@ -106,40 +106,30 @@ def train(inputs, labels):
 # 推論を行う
 def estimate(data_loader: DataLoader, calc_func, subset: str, epoch_num: int, log_file: str, iterate_len: int):
     epoch_loss = 0
-    epoch_full_fit_accuracy = 0
-    epoch_per_fit_accuracy = 0
+    epoch_accuracy = 0
     start_time = time()
 
     for i, data in enumerate(data_loader):
         # 前処理
         inputs, labels = data
         labels = labels.to(device, non_blocking=True)
-        temp_batch_size = len(inputs)  # batch_size=4 data_len=10 最後に2余るのでこれで対応する
-        answer = torch.full_like(torch.zeros(temp_batch_size), fill_value=frame_num).cuda()  # accuracyの計算に使う
-
         # 演算開始. start calculate.
         outputs, loss = calc_func(inputs, labels)
 
         # 後処理
-        predicted = torch.max(outputs.permute(1, 0, 2), 2)[1]  # batch_first = False
-        per_fit_accuracy = (predicted == labels).sum().item() / (temp_batch_size * frame_num)
-        full_fit_accuracy = ((predicted == labels).sum(1) == answer).sum().item() / temp_batch_size
-        epoch_per_fit_accuracy += per_fit_accuracy
-        epoch_full_fit_accuracy += full_fit_accuracy
+        predicted = torch.max(torch.mean(outputs, 0), 1)[1]  # batch_first = False
+        accuracy = (predicted == labels).sum().item() / len(inputs)
+        epoch_accuracy += accuracy
         epoch_loss += loss
-        print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, ' +
-              f'{full_fit_accuracy = }, {per_fit_accuracy = }')
+        print(f'{subset}: epoch = {epoch_num + 1}, i = [{i}/{iterate_len - 1}], {loss = }, {accuracy = }')
 
     loss_avg = epoch_loss / iterate_len
-    full_fit_accuracy_avg = epoch_full_fit_accuracy / iterate_len
-    per_fit_accuracy_avg = epoch_per_fit_accuracy / iterate_len
+    accuracy_avg = epoch_accuracy / iterate_len
     epoch_time = time() - start_time
     learning_rate = optimizer.state_dict()['param_groups'][0]['lr']
-    print(f'{subset}: epoch = {epoch_num + 1}, {loss_avg = }, {full_fit_accuracy_avg = }, ' +
-          f'{per_fit_accuracy_avg = }, {epoch_time = }, {learning_rate = }')
+    print(f'{subset}: epoch = {epoch_num + 1}, {loss_avg = }, {accuracy_avg = }, {epoch_time = }, {learning_rate = }')
     with open(log_file, mode='a') as f:
-        f.write(f'{epoch_num + 1},{loss_avg},{full_fit_accuracy_avg},{per_fit_accuracy_avg},' +
-                f'{epoch_time},{learning_rate}\n')
+        f.write(f'{epoch_num + 1},{loss_avg},{accuracy_avg},{epoch_time},{learning_rate}\n')
 
 
 # 推論を実行
