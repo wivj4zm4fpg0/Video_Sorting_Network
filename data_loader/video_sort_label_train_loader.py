@@ -37,7 +37,7 @@ class VideoCNN3dSortLabelTrainDataSet(VideoTrainDataSet):  # video_train_loader.
         frame1 = self.data_list[index][1]
         frame2 = self.data_list[index][2]
         frame3 = self.data_list[index][3]
-        label = self.data_list[index][4]
+        label = self.data_list[index][5]  # 4-> per frame, 5-> classification
 
         pre_processing = lambda image_path: self.pre_processing(Image.open(image_path).convert('RGB'))
         output_tensor = []
@@ -74,7 +74,7 @@ if __name__ == '__main__':  # UCF101データセットの読み込みテスト�
     def image_show(img):  # 画像を表示
         np_img = np.transpose(make_grid(img).numpy(), (1, 2, 0))
         cv2.imshow('image', cv2.cvtColor(np_img, cv2.COLOR_BGR2RGB))
-        cv2.moveWindow('image', 100, 200)
+        cv2.moveWindow('image', 100, 100)
         if cv2.waitKey(0) & 0xFF == ord('q'):
             exit(0)
 

@@ -44,7 +44,7 @@ class CNN3dRNN(nn.Module):
 
 
 if __name__ == '__main__':
-    model = CNN3dRNN()
-    input = torch.randn(2, 4, 16, 3, 80, 80)
+    model = CNN3dRNN(pretrained=False, class_num=3)
+    input = torch.randn(2, 4, 16, 3, 80, 80)  # batch_size, seq_len, frame_num, channel, height, width
     output = model(input)
     print(f'{output.shape = }')
