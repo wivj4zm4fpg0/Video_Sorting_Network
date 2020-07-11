@@ -44,7 +44,7 @@ train_iterate_len = len(train_loader)
 
 # 初期設定
 # resnet18を取得
-Net = CNN_RNN(6, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
+Net = CNN_RNN(12, pretrained=args.use_pretrained_model, bidirectional=args.use_bidirectional)
 criterion = torch.nn.CrossEntropyLoss()  # Loss関数を定義
 optimizer = torch.optim.Adam(Net.parameters(), lr=args.learning_rate)  # 重み更新方法を定義
 current_epoch = 0
